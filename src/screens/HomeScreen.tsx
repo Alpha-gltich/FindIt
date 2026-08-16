@@ -1,8 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors } from '../constants/colors';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+
+type RootStackParamList = {
+  Home: undefined;
+  ReportLost: undefined;
+  ReportFound: undefined;
+  Browse: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -11,15 +24,27 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('ReportLost')}
+        >
           <Text style={styles.primaryButtonText}>I Lost Something</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('ReportFound')}
+        >
           <Text style={styles.secondaryButtonText}>I Found Something</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.outlineButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.outlineButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Browse')}
+        >
           <Text style={styles.outlineButtonText}>Browse Reports</Text>
         </TouchableOpacity>
       </View>
