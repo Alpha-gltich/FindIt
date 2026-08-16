@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import Button from '../components/Button';
 
 type RootStackParamList = {
   Home: undefined;
@@ -24,29 +25,21 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          activeOpacity={0.8}
+        <Button
+          title="I Lost Something"
           onPress={() => navigation.navigate('ReportLost')}
-        >
-          <Text style={styles.primaryButtonText}>I Lost Something</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          activeOpacity={0.8}
+          variant="primary"
+        />
+        <Button
+          title="I Found Something"
           onPress={() => navigation.navigate('ReportFound')}
-        >
-          <Text style={styles.secondaryButtonText}>I Found Something</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.outlineButton}
-          activeOpacity={0.8}
+          variant="secondary"
+        />
+        <Button
+          title="Browse Reports"
           onPress={() => navigation.navigate('Browse')}
-        >
-          <Text style={styles.outlineButtonText}>Browse Reports</Text>
-        </TouchableOpacity>
+          variant="outline"
+        />
       </View>
     </View>
   );
@@ -76,39 +69,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 16,
-  },
-  primaryButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: Colors.success,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  outlineButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  outlineButtonText: {
-    color: Colors.text,
-    fontSize: 17,
-    fontWeight: '600',
   },
 });
