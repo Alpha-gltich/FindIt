@@ -5,6 +5,8 @@ import HomeScreen from '../screens/HomeScreen';
 import ReportLostScreen from '../screens/ReportLostScreen';
 import ReportFoundScreen from '../screens/ReportFoundScreen';
 import BrowseScreen from '../screens/BrowseScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +33,16 @@ export default function AppNavigator() {
           name="Browse"
           component={BrowseScreen}
           options={{ title: 'Browse Reports' }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ title: 'Log In' }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ title: 'Create Account' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

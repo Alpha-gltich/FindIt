@@ -10,6 +10,8 @@ type RootStackParamList = {
   ReportLost: undefined;
   ReportFound: undefined;
   Browse: undefined;
+  Login: undefined;
+  Register: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,6 +40,16 @@ export default function HomeScreen() {
         <Button
           title="Browse Reports"
           onPress={() => navigation.navigate('Browse')}
+          variant="outline"
+        />
+        <Button
+          title="Login (test)"
+          onPress={() => navigation.navigate('Login')}
+          variant="outline"
+        />
+        <Button
+          title="Register (test)"
+          onPress={() => navigation.navigate('Register')}
           variant="outline"
         />
       </View>
