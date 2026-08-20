@@ -1,13 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { supabase } from '../services/supabase';
+
+type RootStackParamList = {
+  Home: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function RegisterScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password) {
+      Alert.alert('Missing info', 'Please fill in all fields.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Weak password', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { full_name: name.trim() },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Registration failed', error.message);
+      return;
+    }
+
+    navigation.navigate('Home');
+  };
 
   return (
     <View style={styles.container}>
@@ -18,6 +59,7 @@ export default function RegisterScreen() {
         placeholder="Full name"
         value={name}
         onChangeText={setName}
+        editable={!loading}
       />
       <Input
         placeholder="Email"
@@ -25,15 +67,22 @@ export default function RegisterScreen() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        editable={!loading}
       />
       <Input
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        editable={!loading}
       />
 
-      <Button title="Create Account" onPress={() => {}} variant="primary" />
+      <Button
+        title="Create Account"
+        onPress={handleRegister}
+        variant="primary"
+        loading={loading}
+      />
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 import { Colors } from '../constants/colors';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline';
@@ -9,9 +9,11 @@ interface ButtonProps {
   onPress: () => void;
   variant?: ButtonVariant;
   style?: ViewStyle;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
-export default function Button({ title, onPress, variant = 'primary', style }: ButtonProps) {
+export default function Button({ title, onPress, variant = 'primary', style, disabled = false, loading = false }: ButtonProps) {
   const getButtonStyle = (): ViewStyle => {
     switch (variant) {
       case 'secondary':
@@ -32,13 +34,20 @@ export default function Button({ title, onPress, variant = 'primary', style }: B
     }
   };
 
+  const isDisabled = disabled || loading;
+
   return (
     <TouchableOpacity
-      style={[styles.base, getButtonStyle(), style]}
+      style={[styles.base, getButtonStyle(), isDisabled && styles.disabled, style]}
       activeOpacity={0.8}
       onPress={onPress}
+      disabled={isDisabled}
     >
-      <Text style={getTextStyle()}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator color={variant === 'outline' ? Colors.text : Colors.white} />
+      ) : (
+        <Text style={getTextStyle()}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -59,6 +68,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
     backgroundColor: 'transparent',
+  },
+  disabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: Colors.white,
