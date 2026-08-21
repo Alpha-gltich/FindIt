@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { supabase } from '../services/supabase';
 
 const CATEGORIES = ['Phone', 'Wallet', 'Keys', 'ID Card', 'Laptop', 'Other'];
 
@@ -11,10 +12,45 @@ export default function ReportLostScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    // Validation + Supabase submission comes in Day 13
-    console.log({ itemName, description, category, location });
+  const handleSubmit = async () => {
+    if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
+      Alert.alert('Missing info', 'Please fill in all fields, including a category.');
+      return;
+    }
+
+    setLoading(true);
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setLoading(false);
+      Alert.alert('Not logged in', 'Please log in before reporting an item.');
+      return;
+    }
+
+    const { error } = await supabase.from('reports').insert({
+      user_id: user.id,
+      type: 'lost',
+      item_name: itemName.trim(),
+      description: description.trim(),
+      category,
+      location: location.trim(),
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Submission failed', error.message);
+      return;
+    }
+
+    Alert.alert('Report submitted', 'Your lost item report has been posted.');
+    setItemName('');
+    setDescription('');
+    setCategory('');
+    setLocation('');
   };
 
   return (
@@ -26,6 +62,7 @@ export default function ReportLostScreen() {
         placeholder="Item name (e.g. Blue backpack)"
         value={itemName}
         onChangeText={setItemName}
+        editable={!loading}
       />
       <Input
         placeholder="Description"
@@ -34,6 +71,7 @@ export default function ReportLostScreen() {
         multiline
         numberOfLines={4}
         style={styles.textArea}
+        editable={!loading}
       />
 
       <Text style={styles.label}>Category</Text>
@@ -44,6 +82,7 @@ export default function ReportLostScreen() {
             style={[styles.chip, category === cat && styles.chipSelected]}
             onPress={() => setCategory(cat)}
             activeOpacity={0.8}
+            disabled={loading}
           >
             <Text style={[styles.chipText, category === cat && styles.chipTextSelected]}>
               {cat}
@@ -56,9 +95,10 @@ export default function ReportLostScreen() {
         placeholder="Where did you lose it? (e.g. Library 2nd floor)"
         value={location}
         onChangeText={setLocation}
+        editable={!loading}
       />
 
-      <Button title="Submit Report" onPress={handleSubmit} variant="primary" />
+      <Button title="Submit Report" onPress={handleSubmit} variant="primary" loading={loading} />
     </ScrollView>
   );
 }
