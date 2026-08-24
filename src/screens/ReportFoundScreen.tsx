@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -13,6 +14,47 @@ export default function ReportFoundScreen() {
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow photo access to attach a picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  };
+
+  const uploadPhoto = async (uri: string, userId: string): Promise<string> => {
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('report-photos')
+      .upload(fileName, arrayBuffer, {
+        contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage.from('report-photos').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
 
   const handleSubmit = async () => {
     if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
@@ -30,6 +72,18 @@ export default function ReportFoundScreen() {
       return;
     }
 
+    let photoUrl: string | null = null;
+
+    if (photoUri) {
+      try {
+        photoUrl = await uploadPhoto(photoUri, user.id);
+      } catch (uploadErr: any) {
+        setLoading(false);
+        Alert.alert('Photo upload failed', uploadErr.message || 'Please try again.');
+        return;
+      }
+    }
+
     const { error } = await supabase.from('reports').insert({
       user_id: user.id,
       type: 'found',
@@ -37,6 +91,7 @@ export default function ReportFoundScreen() {
       description: description.trim(),
       category,
       location: location.trim(),
+      photo_url: photoUrl,
     });
 
     setLoading(false);
@@ -51,12 +106,25 @@ export default function ReportFoundScreen() {
     setDescription('');
     setCategory('');
     setLocation('');
+    setPhotoUri(null);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Report Found Item</Text>
       <Text style={styles.subtitle}>Fill in the details of what you found</Text>
+
+      <Text style={styles.label}>Photo (optional)</Text>
+      {photoUri ? (
+        <TouchableOpacity onPress={handlePickImage} disabled={loading}>
+          <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+          <Text style={styles.changePhotoText}>Tap to change photo</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.photoPicker} onPress={handlePickImage} disabled={loading}>
+          <Text style={styles.photoPickerText}>+ Add Photo</Text>
+        </TouchableOpacity>
+      )}
 
       <Input
         placeholder="Item name (e.g. Blue backpack)"
@@ -104,41 +172,27 @@ export default function ReportFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginBottom: 24,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-    textAlignVertical: 'top',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: 24 },
+  title: { fontSize: 24, fontWeight: '700', color: Colors.text, marginBottom: 8 },
+  subtitle: { fontSize: 16, color: Colors.textSecondary, marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
+  photoPicker: {
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
+  photoPickerText: { color: Colors.textSecondary, fontSize: 16, fontWeight: '600' },
+  photoPreview: { width: '100%', height: 180, borderRadius: 12, marginBottom: 4 },
+  changePhotoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  textArea: { height: 100, paddingTop: 12, textAlignVertical: 'top' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -147,16 +201,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  chipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: {
-    fontSize: 14,
-    color: Colors.text,
-  },
-  chipTextSelected: {
-    color: Colors.white,
-    fontWeight: '600',
-  },
+  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 14, color: Colors.text },
+  chipTextSelected: { color: Colors.white, fontWeight: '600' },
 });
