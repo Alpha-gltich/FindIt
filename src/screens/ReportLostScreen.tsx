@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -13,6 +14,26 @@ export default function ReportLostScreen() {
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Please allow photo access to attach a picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
@@ -30,6 +51,7 @@ export default function ReportLostScreen() {
       return;
     }
 
+    // Photo upload comes in Day 16 — photo_url stays null for now even if a photo was picked
     const { error } = await supabase.from('reports').insert({
       user_id: user.id,
       type: 'lost',
@@ -51,12 +73,25 @@ export default function ReportLostScreen() {
     setDescription('');
     setCategory('');
     setLocation('');
+    setPhotoUri(null);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Report Lost Item</Text>
       <Text style={styles.subtitle}>Fill in the details of what you lost</Text>
+
+      <Text style={styles.label}>Photo (optional)</Text>
+      {photoUri ? (
+        <TouchableOpacity onPress={handlePickImage} disabled={loading}>
+          <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+          <Text style={styles.changePhotoText}>Tap to change photo</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.photoPicker} onPress={handlePickImage} disabled={loading}>
+          <Text style={styles.photoPickerText}>+ Add Photo</Text>
+        </TouchableOpacity>
+      )}
 
       <Input
         placeholder="Item name (e.g. Blue backpack)"
@@ -122,16 +157,44 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 24,
   },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-    textAlignVertical: 'top',
-  },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
     marginBottom: 8,
+  },
+  photoPicker: {
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  photoPickerText: {
+    color: Colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  photoPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  changePhotoText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 12,
+    textAlignVertical: 'top',
   },
   chipRow: {
     flexDirection: 'row',

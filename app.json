@@ -25,6 +25,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FindIt needs access to your photos so you can attach a picture to your report."
+        }
+      ]
+    ]
   }
 }
