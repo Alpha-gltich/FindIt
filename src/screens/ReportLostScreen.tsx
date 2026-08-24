@@ -35,6 +35,27 @@ export default function ReportLostScreen() {
     }
   };
 
+  const uploadPhoto = async (uri: string, userId: string): Promise<string> => {
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('report-photos')
+      .upload(fileName, arrayBuffer, {
+        contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage.from('report-photos').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
   const handleSubmit = async () => {
     if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
       Alert.alert('Missing info', 'Please fill in all fields, including a category.');
@@ -51,7 +72,18 @@ export default function ReportLostScreen() {
       return;
     }
 
-    // Photo upload comes in Day 16 — photo_url stays null for now even if a photo was picked
+    let photoUrl: string | null = null;
+
+    if (photoUri) {
+      try {
+        photoUrl = await uploadPhoto(photoUri, user.id);
+      } catch (uploadErr: any) {
+        setLoading(false);
+        Alert.alert('Photo upload failed', uploadErr.message || 'Please try again.');
+        return;
+      }
+    }
+
     const { error } = await supabase.from('reports').insert({
       user_id: user.id,
       type: 'lost',
@@ -59,6 +91,7 @@ export default function ReportLostScreen() {
       description: description.trim(),
       category,
       location: location.trim(),
+      photo_url: photoUrl,
     });
 
     setLoading(false);
@@ -139,30 +172,11 @@ export default function ReportLostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: 24 },
+  title: { fontSize: 24, fontWeight: '700', color: Colors.text, marginBottom: 8 },
+  subtitle: { fontSize: 16, color: Colors.textSecondary, marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
   photoPicker: {
     height: 140,
     borderRadius: 12,
@@ -174,34 +188,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  photoPickerText: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  photoPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  changePhotoText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-    textAlignVertical: 'top',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
+  photoPickerText: { color: Colors.textSecondary, fontSize: 16, fontWeight: '600' },
+  photoPreview: { width: '100%', height: 180, borderRadius: 12, marginBottom: 4 },
+  changePhotoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  textArea: { height: 100, paddingTop: 12, textAlignVertical: 'top' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -210,16 +201,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  chipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: {
-    fontSize: 14,
-    color: Colors.text,
-  },
-  chipTextSelected: {
-    color: Colors.white,
-    fontWeight: '600',
-  },
+  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 14, color: Colors.text },
+  chipTextSelected: { color: Colors.white, fontWeight: '600' },
 });
