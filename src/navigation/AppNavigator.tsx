@@ -7,8 +7,10 @@ import ReportFoundScreen from '../screens/ReportFoundScreen';
 import BrowseScreen from '../screens/BrowseScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ItemDetailScreen from '../screens/ItemDetailScreen';
+import { RootStackParamList } from '../types/navigation';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
@@ -43,6 +45,11 @@ export default function AppNavigator() {
           name="Register"
           component={RegisterScreen}
           options={{ title: 'Create Account' }}
+        />
+        <Stack.Screen
+          name="Detail"
+          component={ItemDetailScreen}
+          options={{ title: 'Item Details' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

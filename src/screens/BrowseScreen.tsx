@@ -1,25 +1,19 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import { supabase } from '../services/supabase';
-
-interface Report {
-  id: string;
-  type: 'lost' | 'found';
-  item_name: string;
-  description: string;
-  category: string;
-  location: string;
-  photo_url: string | null;
-  status: string;
-  created_at: string;
-}
+import { Report, RootStackParamList } from '../types/navigation';
 
 const CATEGORIES = ['All', 'Phone', 'Wallet', 'Keys', 'ID Card', 'Laptop', 'Other'];
 const TYPE_FILTERS = ['All', 'Lost', 'Found'] as const;
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function BrowseScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,25 +63,27 @@ export default function BrowseScreen() {
   }, [reports, searchText, selectedCategory, selectedType]);
 
   const renderItem = ({ item }: { item: Report }) => (
-    <View style={styles.card}>
-      {item.photo_url ? (
-        <Image source={{ uri: item.photo_url }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-          <Text style={styles.thumbnailPlaceholderText}>No Photo</Text>
-        </View>
-      )}
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
-          <View style={[styles.typeTag, item.type === 'lost' ? styles.lostTag : styles.foundTag]}>
-            <Text style={styles.typeTagText}>{item.type === 'lost' ? 'Lost' : 'Found'}</Text>
+    <TouchableOpacity onPress={() => navigation.navigate('Detail', { report: item })} activeOpacity={0.8}>
+      <View style={styles.card}>
+        {item.photo_url ? (
+          <Image source={{ uri: item.photo_url }} style={styles.thumbnail} />
+        ) : (
+          <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+            <Text style={styles.thumbnailPlaceholderText}>No Photo</Text>
           </View>
+        )}
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
+            <View style={[styles.typeTag, item.type === 'lost' ? styles.lostTag : styles.foundTag]}>
+              <Text style={styles.typeTagText}>{item.type === 'lost' ? 'Lost' : 'Found'}</Text>
+            </View>
+          </View>
+          <Text style={styles.category}>{item.category}</Text>
+          <Text style={styles.location} numberOfLines={1}>{item.location}</Text>
         </View>
-        <Text style={styles.category}>{item.category}</Text>
-        <Text style={styles.location} numberOfLines={1}>{item.location}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
