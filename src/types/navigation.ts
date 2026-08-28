@@ -7,6 +7,7 @@ export type Report = {
   location: string;
   photo_url: string | null;
   status: string;
+  contact_info: string | null;
   created_at: string;
 };
 

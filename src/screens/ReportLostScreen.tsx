@@ -13,6 +13,7 @@ export default function ReportLostScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
@@ -92,6 +93,7 @@ export default function ReportLostScreen() {
       category,
       location: location.trim(),
       photo_url: photoUrl,
+      contact_info: contactInfo.trim() || null,
     });
 
     setLoading(false);
@@ -106,6 +108,7 @@ export default function ReportLostScreen() {
     setDescription('');
     setCategory('');
     setLocation('');
+    setContactInfo('');
     setPhotoUri(null);
   };
 
@@ -163,6 +166,13 @@ export default function ReportLostScreen() {
         placeholder="Where did you lose it? (e.g. Library 2nd floor)"
         value={location}
         onChangeText={setLocation}
+        editable={!loading}
+      />
+
+      <Input
+        placeholder="Phone or email (optional, shown to other users)"
+        value={contactInfo}
+        onChangeText={setContactInfo}
         editable={!loading}
       />
 
