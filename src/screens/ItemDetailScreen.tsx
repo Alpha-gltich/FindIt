@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Alert } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
 import Button from '../components/Button';
 import { supabase } from '../services/supabase';
 import { RootStackParamList } from '../types/navigation';
 
 type DetailRouteProp = RouteProp<RootStackParamList, 'Detail'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ItemDetailScreen() {
   const route = useRoute<DetailRouteProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { report } = route.params;
 
   const [status, setStatus] = useState(report.status);
   const [isOwner, setIsOwner] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const checkOwner = async () => {
@@ -46,6 +50,37 @@ export default function ItemDetailScreen() {
     Alert.alert(
       'Status updated',
       newStatus === 'recovered' ? 'Marked as recovered.' : 'Marked as active again.'
+    );
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete this report?',
+      'This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+
+            const { error } = await supabase
+              .from('reports')
+              .delete()
+              .eq('id', report.id);
+
+            setDeleting(false);
+
+            if (error) {
+              Alert.alert('Delete failed', error.message);
+              return;
+            }
+
+            navigation.goBack();
+          },
+        },
+      ]
     );
   };
 
@@ -93,12 +128,21 @@ export default function ItemDetailScreen() {
       </View>
 
       {isOwner && (
-        <Button
-          title={status === 'active' ? 'Mark as Recovered' : 'Mark as Active'}
-          onPress={handleToggleStatus}
-          variant={status === 'active' ? 'secondary' : 'outline'}
-          loading={updating}
-        />
+        <View style={styles.ownerActions}>
+          <Button
+            title={status === 'active' ? 'Mark as Recovered' : 'Mark as Active'}
+            onPress={handleToggleStatus}
+            variant={status === 'active' ? 'secondary' : 'outline'}
+            loading={updating}
+          />
+          <Button
+            title="Delete Report"
+            onPress={handleDelete}
+            variant="outline"
+            loading={deleting}
+            style={styles.deleteButton}
+          />
+        </View>
       )}
     </ScrollView>
   );
@@ -126,4 +170,6 @@ const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase' },
   value: { fontSize: 16, color: Colors.text, lineHeight: 22 },
+  ownerActions: { gap: 12 },
+  deleteButton: { borderColor: '#EF4444' },
 });
