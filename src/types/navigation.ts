@@ -1,5 +1,6 @@
 export type Report = {
   id: string;
+  user_id: string;
   type: 'lost' | 'found';
   item_name: string;
   description: string;
