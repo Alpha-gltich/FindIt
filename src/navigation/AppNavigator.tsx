@@ -9,6 +9,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
 import MyReportsScreen from '../screens/MyReportsScreen';
+import EditReportScreen from '../screens/EditReportScreen';
 import { RootStackParamList } from '../types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -25,6 +26,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create Account' }} />
         <Stack.Screen name="Detail" component={ItemDetailScreen} options={{ title: 'Item Details' }} />
         <Stack.Screen name="MyReports" component={MyReportsScreen} options={{ title: 'My Reports' }} />
+        <Stack.Screen name="EditReport" component={EditReportScreen} options={{ title: 'Edit Report' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

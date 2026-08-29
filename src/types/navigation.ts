@@ -21,4 +21,5 @@ export type RootStackParamList = {
   Register: undefined;
   Detail: { report: Report };
   MyReports: undefined;
+  EditReport: { report: Report };
 };

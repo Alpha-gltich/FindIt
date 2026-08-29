@@ -136,6 +136,11 @@ export default function ItemDetailScreen() {
             loading={updating}
           />
           <Button
+            title="Edit Report"
+            onPress={() => navigation.navigate('EditReport', { report })}
+           variant="outline"
+          />
+          <Button
             title="Delete Report"
             onPress={handleDelete}
             variant="outline"
