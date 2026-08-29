@@ -17,17 +17,21 @@ export default function ItemDetailScreen() {
 
   const [status, setStatus] = useState(report.status);
   const [isOwner, setIsOwner] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const checkOwner = async () => {
+    const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.id === report.user_id) {
-        setIsOwner(true);
+      if (user) {
+        setIsLoggedIn(true);
+        if (user.id === report.user_id) {
+          setIsOwner(true);
+        }
       }
     };
-    checkOwner();
+    checkAuth();
   }, [report.user_id]);
 
   const handleToggleStatus = async () => {
@@ -84,6 +88,33 @@ export default function ItemDetailScreen() {
     );
   };
 
+  const renderContactSection = () => {
+    if (!isLoggedIn) {
+      return (
+        <>
+          <Text style={styles.label}>Contact</Text>
+          <Text style={styles.valueMuted}>Log in to view contact information</Text>
+        </>
+      );
+    }
+
+    if (!report.contact_info) {
+      return (
+        <>
+          <Text style={styles.label}>Contact</Text>
+          <Text style={styles.valueMuted}>No contact info provided</Text>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Text style={styles.label}>Contact</Text>
+        <Text style={styles.value}>{report.contact_info}</Text>
+      </>
+    );
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {report.photo_url ? (
@@ -123,8 +154,7 @@ export default function ItemDetailScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Posted by</Text>
-        <Text style={styles.value}>Contact feature coming soon</Text>
+        {renderContactSection()}
       </View>
 
       {isOwner && (
@@ -138,7 +168,7 @@ export default function ItemDetailScreen() {
           <Button
             title="Edit Report"
             onPress={() => navigation.navigate('EditReport', { report })}
-           variant="outline"
+            variant="outline"
           />
           <Button
             title="Delete Report"
@@ -175,6 +205,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase' },
   value: { fontSize: 16, color: Colors.text, lineHeight: 22 },
+  valueMuted: { fontSize: 16, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 22 },
   ownerActions: { gap: 12 },
   deleteButton: { borderColor: '#EF4444' },
 });
