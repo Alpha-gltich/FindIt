@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { supabase } from '../services/supabase';
-
-type RootStackParamList = {
-  Home: undefined;
-  Login: undefined;
-  Register: undefined;
-};
+import { RootStackParamList } from '../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -69,6 +64,16 @@ export default function LoginScreen() {
         variant="primary"
         loading={loading}
       />
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Register')}
+        disabled={loading}
+        style={styles.linkWrapper}
+      >
+        <Text style={styles.linkText}>
+          Don't have an account? <Text style={styles.linkTextBold}>Register</Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -90,5 +95,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textSecondary,
     marginBottom: 32,
+  },
+  linkWrapper: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  linkText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  linkTextBold: {
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });
