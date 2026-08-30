@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import Input from '../components/Input';
+import Button from '../components/Button';
 import { supabase } from '../services/supabase';
 import { Report, RootStackParamList } from '../types/navigation';
 
@@ -20,6 +21,7 @@ export default function BrowseScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedType, setSelectedType] = useState<typeof TYPE_FILTERS[number]>('All');
+  const [fetchError, setFetchError] = useState(false);
 
   const fetchReports = async () => {
     const { data, error } = await supabase
@@ -29,7 +31,9 @@ export default function BrowseScreen() {
 
     if (error) {
       console.error('Failed to fetch reports:', error.message);
+      setFetchError(true);
     } else {
+      setFetchError(false);
       setReports(data || []);
     }
   };
@@ -139,7 +143,21 @@ export default function BrowseScreen() {
         />
       </View>
 
-      {filteredReports.length === 0 ? (
+      {fetchError ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Something went wrong loading reports</Text>
+          <Text style={styles.emptySubtext}>Check your connection and try again</Text>
+          <View style={styles.retryButtonWrapper}>
+            <Button
+              title="Retry"
+              onPress={() => {
+                setLoading(true);
+                fetchReports().finally(() => setLoading(false));
+              }}
+            />
+          </View>
+        </View>
+      ) : filteredReports.length === 0 ? (
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>No reports found</Text>
           <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
@@ -162,6 +180,7 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 4 },
   emptySubtext: { fontSize: 14, color: Colors.textSecondary },
+  retryButtonWrapper: { marginTop: 16, width: '100%' },
   filterBar: {
     paddingHorizontal: 16,
     paddingTop: 12,

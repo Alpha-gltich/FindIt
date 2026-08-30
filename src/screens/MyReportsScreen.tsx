@@ -15,12 +15,14 @@ export default function MyReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const fetchMyReports = async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       setIsLoggedOut(true);
+      setFetchError(false);
       setReports([]);
       return;
     }
@@ -35,7 +37,9 @@ export default function MyReportsScreen() {
 
     if (error) {
       console.error('Failed to fetch my reports:', error.message);
+      setFetchError(true);
     } else {
+      setFetchError(false);
       setReports(data || []);
     }
   };
@@ -90,10 +94,24 @@ export default function MyReportsScreen() {
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>Log in to view your reports</Text>
           <Text style={styles.emptySubtext}>Your submitted lost and found reports will show up here once you're signed in</Text>
-          <View style={styles.loginButtonWrapper}>
+          <View style={styles.actionButtonWrapper}>
             <Button
               title="Log In"
               onPress={() => navigation.navigate('Login')}
+            />
+          </View>
+        </View>
+      ) : fetchError ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Something went wrong loading your reports</Text>
+          <Text style={styles.emptySubtext}>Check your connection and try again</Text>
+          <View style={styles.actionButtonWrapper}>
+            <Button
+              title="Retry"
+              onPress={() => {
+                setLoading(true);
+                fetchMyReports().finally(() => setLoading(false));
+              }}
             />
           </View>
         </View>
@@ -120,7 +138,7 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 4 },
   emptySubtext: { fontSize: 14, color: Colors.textSecondary },
-  loginButtonWrapper: { marginTop: 16, width: '100%' },
+  actionButtonWrapper: { marginTop: 16, width: '100%' },
   listContent: { padding: 16 },
   card: {
     flexDirection: 'row',
