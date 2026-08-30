@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants/colors';
 import { supabase } from '../services/supabase';
 import { Report, RootStackParamList } from '../types/navigation';
+import Button from '../components/Button';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -13,14 +14,18 @@ export default function MyReportsScreen() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const fetchMyReports = async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
+      setIsLoggedOut(true);
       setReports([]);
       return;
     }
+
+    setIsLoggedOut(false);
 
     const { data, error } = await supabase
       .from('reports')
@@ -81,7 +86,18 @@ export default function MyReportsScreen() {
 
   return (
     <View style={styles.container}>
-      {reports.length === 0 ? (
+      {isLoggedOut ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Log in to view your reports</Text>
+          <Text style={styles.emptySubtext}>Your submitted lost and found reports will show up here once you're signed in</Text>
+          <View style={styles.loginButtonWrapper}>
+            <Button
+              title="Log In"
+              onPress={() => navigation.navigate('Login')}
+            />
+          </View>
+        </View>
+      ) : reports.length === 0 ? (
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>No reports yet</Text>
           <Text style={styles.emptySubtext}>Reports you submit will show up here</Text>
@@ -104,6 +120,7 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 4 },
   emptySubtext: { fontSize: 14, color: Colors.textSecondary },
+  loginButtonWrapper: { marginTop: 16, width: '100%' },
   listContent: { padding: 16 },
   card: {
     flexDirection: 'row',
