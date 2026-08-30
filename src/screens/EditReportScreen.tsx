@@ -27,6 +27,7 @@ export default function EditReportScreen() {
   const [loading, setLoading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(report.photo_url);
   const [photoChanged, setPhotoChanged] = useState(false);
+  const [categoryError, setCategoryError] = useState(false);
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -71,9 +72,11 @@ export default function EditReportScreen() {
 
   const handleSave = async () => {
     if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
+      setCategoryError(!category);
       Alert.alert('Missing info', 'Please fill in all fields, including a category.');
       return;
     }
+    setCategoryError(false);
 
     setLoading(true);
 
@@ -153,13 +156,16 @@ export default function EditReportScreen() {
         editable={!loading}
       />
 
-      <Text style={styles.label}>Category</Text>
+      <Text style={[styles.label, categoryError && styles.labelError]}>Category</Text>
       <View style={styles.chipRow}>
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat}
             style={[styles.chip, category === cat && styles.chipSelected]}
-            onPress={() => setCategory(cat)}
+            onPress={() => {
+              setCategory(cat);
+              setCategoryError(false);
+            }}
             activeOpacity={0.8}
             disabled={loading}
           >
@@ -195,6 +201,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', color: Colors.text, marginBottom: 8 },
   subtitle: { fontSize: 16, color: Colors.textSecondary, marginBottom: 24 },
   label: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
+  labelError: { color: '#DC2626' },
   photoPicker: {
     height: 140,
     borderRadius: 12,
