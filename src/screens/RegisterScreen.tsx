@@ -28,7 +28,7 @@ export default function RegisterScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
@@ -39,6 +39,15 @@ export default function RegisterScreen() {
 
     if (error) {
       Alert.alert('Registration failed', error.message);
+      return;
+    }
+
+    if (!data.session) {
+      Alert.alert(
+        'Check your email',
+        'We sent a confirmation link to your email. Please confirm your account, then log in.'
+      );
+      navigation.navigate('Login');
       return;
     }
 
