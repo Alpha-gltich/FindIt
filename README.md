@@ -4,13 +4,13 @@ A mobile lost-and-found app built for a university/campus community. Report item
 
 ## Features
 
-- **Account system** — sign up and log in with email/password (Supabase Auth), with email confirmation and persistent sessions across app restarts
-- **Report Lost or Found items** — item name, description, category, location, optional photo, and optional contact info
-- **Browse reports** — search by keyword, filter by category, and toggle between Lost/Found
-- **Item detail view** — full report details with gated contact info (only visible to logged-in users)
-- **My Reports** — view, edit, mark as recovered, or delete your own submitted reports
-- **Photo upload** — attach a photo to any report, stored via Supabase Storage
-- **Error handling** — validation on all forms, retry-able error states on network failures
+- **Account system**: sign up and log in with email/password (Supabase Auth), with email confirmation and persistent sessions across app restarts
+- **Report Lost or Found items**: item name, description, category, location, optional photo, and optional contact info
+- **Browse reports**: search by keyword, filter by category, and toggle between Lost/Found
+- **Item detail view**: full report details; contact info is shown in the app only to logged-in users
+- **My Reports**: view, edit, mark as recovered, or delete your own submitted reports
+- **Photo upload**: attach a photo to any report, stored via Supabase Storage
+- **Error handling**: validation on all forms, retry-able error states on network failures
 
 ## Tech Stack
 
@@ -19,18 +19,22 @@ A mobile lost-and-found app built for a university/campus community. Report item
 - **State/Auth:** React Context (`AuthContext`) for session persistence via AsyncStorage
 
 ## Project Structure
+
+```
 FindIt/
 ├── src/
-│ ├── components/ # Button, Input
-│ ├── constants/ # colors.ts (design system)
-│ ├── contexts/ # AuthContext (session state)
-│ ├── navigation/ # AppNavigator (React Navigation stack)
-│ ├── screens/ # Home, Login, Register, ReportLost, ReportFound,
-│ │ # Browse, ItemDetail, MyReports, EditReport
-│ ├── services/ # supabase.ts (client config)
-│ └── types/ # navigation.ts (Report type, RootStackParamList)
-
-
+│   ├── components/   # Button, Input
+│   ├── constants/    # colors.ts (design system)
+│   ├── contexts/     # AuthContext (session state)
+│   ├── navigation/   # AppNavigator (React Navigation stack)
+│   ├── screens/      # Home, Login, Register, ReportLost, ReportFound,
+│   │                 # Browse, ItemDetail, MyReports, EditReport
+│   ├── services/     # supabase.ts (client config)
+│   └── types/        # navigation.ts (Report type, RootStackParamList)
+├── App.tsx
+├── app.json
+└── package.json
+```
 
 ## Database Schema
 
@@ -50,14 +54,15 @@ FindIt/
 | contact_info | text | Nullable, optional at submission |
 | created_at | timestamptz | |
 
-RLS policies: public read access, owner-only insert/update/delete.
+RLS policies: public read access; insert, update and delete are limited to the report's owner (`auth.uid() = user_id`).
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js
-- Expo Go app (iOS/Android) or a simulator
-- A Supabase project (Auth + PostgreSQL + Storage configured)
+
+- Node.js and npm
+- Expo Go (iOS/Android) on a version that supports Expo SDK 54, or an emulator/simulator
+- A Supabase project with Auth, a `reports` table (schema above) and a Storage bucket for photos
 
 ### Installation
 
@@ -67,23 +72,28 @@ cd FindIt
 npm install
 ```
 
+### Configuration
+
+The Supabase URL and anon (public) key are set in `src/services/supabase.ts`. To run the app against your own Supabase project, replace both values there.
+
 ### Running
 
 ```bash
 npx expo start
 ```
 
-Scan the QR code with Expo Go, or press `a`/`w` for Android/web.
+Scan the QR code with Expo Go, or press `a` for an Android emulator or `w` for web.
 
 ## Screenshots
 
-_[Add screenshots here — Home, Browse, Report form, Item Detail, My Reports]_
+_[Add screenshots here: Home, Browse, Report form, Item Detail, My Reports]_
 
 ## Known Limitations
 
-- Email confirmation links redirect to a default Supabase localhost page (cosmetic only — confirmation still succeeds server-side); a custom deep-link redirect requires a standalone Expo build
-- In-app messaging between users is out of scope for this version
+- Email confirmation links redirect to a default Supabase localhost page (cosmetic only; confirmation still succeeds server-side). A custom deep-link redirect requires a standalone Expo build.
+- Contact info is hidden from logged-out users in the app's interface only. Because the database's public read policy covers every column, contact details can still be retrieved by calling the Supabase API directly with the public key. Restricting that column at the database level is planned future work.
+- In-app messaging between users is out of scope for this version.
 
 ## Author
 
-Theo — [github.com/Alpha-gltich](https://github.com/Alpha-gltich)
+Theophilus Godwin ([github.com/Alpha-gltich](https://github.com/Alpha-gltich))
