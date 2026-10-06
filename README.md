@@ -14,7 +14,7 @@ A mobile lost-and-found app built for a university/campus community. Report item
 
 ## Tech Stack
 
-- **Frontend:** React Native (Expo SDK 54), TypeScript, React Navigation
+- **Frontend:** React Native (Expo SDK 57), TypeScript, React Navigation
 - **Backend:** Supabase (Auth, PostgreSQL, Storage)
 - **State/Auth:** React Context (`AuthContext`) for session persistence via AsyncStorage
 
@@ -61,7 +61,7 @@ RLS policies: public read access; insert, update and delete are limited to the r
 ### Prerequisites
 
 - Node.js and npm
-- Expo Go (iOS/Android) on a version that supports Expo SDK 54, or an emulator/simulator
+- Expo Go (iOS/Android) on a version that supports Expo SDK 57, or an emulator/simulator
 - A Supabase project with Auth, a `reports` table (schema above) and a Storage bucket for photos
 
 ### Installation
