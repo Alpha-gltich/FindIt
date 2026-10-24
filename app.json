@@ -26,7 +26,15 @@
           "photosPermission": "FindIt needs access to your photos so you can attach a picture to your report."
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#ffffff",
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }
