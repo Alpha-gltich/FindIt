@@ -5,6 +5,7 @@ import { Colors } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { supabase } from '../services/supabase';
+import { uploadPickedPhoto } from '../services/photoUpload';
 
 const CATEGORIES = ['Phone', 'Wallet', 'Keys', 'ID Card', 'Laptop', 'Other'];
 
@@ -16,6 +17,7 @@ export default function ReportFoundScreen() {
   const [contactInfo, setContactInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState(false);
 
   const handlePickImage = async () => {
@@ -26,36 +28,22 @@ export default function ReportFoundScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
+      base64: true,
       quality: 0.7,
       allowsEditing: true,
       aspect: [4, 3],
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setPhotoUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Photo could not be read', 'Please choose that photo again.');
+        return;
+      }
+      setPhotoUri(asset.uri);
+      setPhotoBase64(asset.base64);
     }
-  };
-
-  const uploadPhoto = async (uri: string, userId: string): Promise<string> => {
-    const response = await fetch(uri);
-    const arrayBuffer = await response.arrayBuffer();
-
-    const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('report-photos')
-      .upload(fileName, arrayBuffer, {
-        contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage.from('report-photos').getPublicUrl(fileName);
-    return data.publicUrl;
   };
 
   const handleSubmit = async () => {
@@ -78,9 +66,9 @@ export default function ReportFoundScreen() {
 
     let photoUrl: string | null = null;
 
-    if (photoUri) {
+    if (photoBase64) {
       try {
-        photoUrl = await uploadPhoto(photoUri, user.id);
+        photoUrl = await uploadPickedPhoto(photoBase64, user.id);
       } catch (uploadErr: any) {
         setLoading(false);
         Alert.alert('Photo upload failed', uploadErr.message || 'Please try again.');
@@ -113,6 +101,7 @@ export default function ReportFoundScreen() {
     setLocation('');
     setContactInfo('');
     setPhotoUri(null);
+    setPhotoBase64(null);
   };
 
   return (

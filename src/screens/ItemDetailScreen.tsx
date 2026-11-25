@@ -18,21 +18,39 @@ export default function ItemDetailScreen() {
   const [status, setStatus] = useState(report.status);
   const [isOwner, setIsOwner] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [contactInfo, setContactInfo] = useState<string | null>(null);
+  const [contactLoaded, setContactLoaded] = useState(false);
+  const [contactError, setContactError] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadUserAndContact = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
-        if (user.id === report.user_id) {
-          setIsOwner(true);
-        }
+      if (!user) return;
+
+      setIsLoggedIn(true);
+      if (user.id === report.user_id) {
+        setIsOwner(true);
       }
+
+      // Contact details are fetched only for logged-in users, never in the public list.
+      const { data, error } = await supabase
+        .from('reports')
+        .select('contact_info')
+        .eq('id', report.id)
+        .single();
+
+      if (error || !data) {
+        setContactError(true);
+      } else {
+        setContactInfo(data.contact_info ?? null);
+        setContactError(false);
+      }
+      setContactLoaded(true);
     };
-    checkAuth();
-  }, [report.user_id]);
+    loadUserAndContact();
+  }, [report.id, report.user_id]);
 
   const handleToggleStatus = async () => {
     const newStatus = status === 'active' ? 'recovered' : 'active';
@@ -55,6 +73,21 @@ export default function ItemDetailScreen() {
       'Status updated',
       newStatus === 'recovered' ? 'Marked as recovered.' : 'Marked as active again.'
     );
+  };
+
+  const handleEdit = () => {
+    // Editing saves contact_info too, so it must be loaded first or it could be overwritten with empty.
+    if (!contactLoaded) {
+      Alert.alert('Please wait', 'Loading report details. Try again in a moment.');
+      return;
+    }
+    if (contactError) {
+      Alert.alert('Could not load details', 'Check your connection, reopen this report and try again.');
+      return;
+    }
+    navigation.navigate('EditReport', {
+      report: { ...report, status, contact_info: contactInfo },
+    });
   };
 
   const handleDelete = () => {
@@ -98,7 +131,25 @@ export default function ItemDetailScreen() {
       );
     }
 
-    if (!report.contact_info) {
+    if (contactError) {
+      return (
+        <>
+          <Text style={styles.label}>Contact</Text>
+          <Text style={styles.valueMuted}>Could not load contact info</Text>
+        </>
+      );
+    }
+
+    if (!contactLoaded) {
+      return (
+        <>
+          <Text style={styles.label}>Contact</Text>
+          <Text style={styles.valueMuted}>Loading...</Text>
+        </>
+      );
+    }
+
+    if (!contactInfo) {
       return (
         <>
           <Text style={styles.label}>Contact</Text>
@@ -110,7 +161,7 @@ export default function ItemDetailScreen() {
     return (
       <>
         <Text style={styles.label}>Contact</Text>
-        <Text style={styles.value}>{report.contact_info}</Text>
+        <Text style={styles.value}>{contactInfo}</Text>
       </>
     );
   };
@@ -167,7 +218,7 @@ export default function ItemDetailScreen() {
           />
           <Button
             title="Edit Report"
-            onPress={() => navigation.navigate('EditReport', { report })}
+            onPress={handleEdit}
             variant="outline"
           />
           <Button

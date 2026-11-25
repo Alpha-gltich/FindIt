@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -10,61 +10,97 @@ import { Report, RootStackParamList } from '../types/navigation';
 
 const CATEGORIES = ['All', 'Phone', 'Wallet', 'Keys', 'ID Card', 'Laptop', 'Other'];
 const TYPE_FILTERS = ['All', 'Lost', 'Found'] as const;
+const PAGE_SIZE = 20;
+// contact_info is deliberately not listed: it is only fetched on the detail screen for logged-in users.
+const LIST_COLUMNS =
+  'id, user_id, type, item_name, description, category, location, photo_url, status, created_at';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Strip characters that have special meaning in filters so a search can't alter the query.
+const sanitizeSearch = (text: string) =>
+  text.replace(/[%_,()*\\"']/g, ' ').replace(/\s+/g, ' ').trim();
 
 export default function BrowseScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedType, setSelectedType] = useState<typeof TYPE_FILTERS[number]>('All');
   const [fetchError, setFetchError] = useState(false);
-
-  const fetchReports = async () => {
-    const { data, error } = await supabase
-      .from('reports')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Failed to fetch reports:', error.message);
-      setFetchError(true);
-    } else {
-      setFetchError(false);
-      setReports(data || []);
-    }
-  };
+  const requestCounter = useRef(0);
 
   useEffect(() => {
-    fetchReports().finally(() => setLoading(false));
-  }, []);
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const fetchReports = useCallback(
+    async (offset: number, replace: boolean) => {
+      const requestId = ++requestCounter.current;
+
+      let query = supabase
+        .from('reports')
+        .select(LIST_COLUMNS)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (selectedType !== 'All') {
+        query = query.eq('type', selectedType.toLowerCase());
+      }
+      if (selectedCategory !== 'All') {
+        query = query.eq('category', selectedCategory);
+      }
+      const term = sanitizeSearch(debouncedSearch);
+      if (term) {
+        query = query.or(`item_name.ilike.%${term}%,description.ilike.%${term}%`);
+      }
+
+      const { data, error } = await query;
+
+      // A newer request has started (filters changed): ignore this stale result.
+      if (requestId !== requestCounter.current) return;
+
+      if (error) {
+        console.error('Failed to fetch reports:', error.message);
+        if (replace) setFetchError(true);
+      } else {
+        const rows = (data ?? []) as unknown as Report[];
+        setFetchError(false);
+        setHasMore(rows.length === PAGE_SIZE);
+        setReports((prev) => {
+          if (replace) return rows;
+          const seen = new Set(prev.map((r) => r.id));
+          return [...prev, ...rows.filter((r) => !seen.has(r.id))];
+        });
+      }
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [selectedType, selectedCategory, debouncedSearch]
+  );
+
+  useEffect(() => {
+    setLoading(true);
+    fetchReports(0, true);
+  }, [fetchReports]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchReports();
+    await fetchReports(0, true);
     setRefreshing(false);
-  }, []);
+  }, [fetchReports]);
 
-  const filteredReports = useMemo(() => {
-    return reports.filter((r) => {
-      const matchesSearch =
-        searchText.trim() === '' ||
-        r.item_name.toLowerCase().includes(searchText.toLowerCase()) ||
-        r.description.toLowerCase().includes(searchText.toLowerCase());
-
-      const matchesCategory = selectedCategory === 'All' || r.category === selectedCategory;
-
-      const matchesType =
-        selectedType === 'All' ||
-        (selectedType === 'Lost' && r.type === 'lost') ||
-        (selectedType === 'Found' && r.type === 'found');
-
-      return matchesSearch && matchesCategory && matchesType;
-    });
-  }, [reports, searchText, selectedCategory, selectedType]);
+  const loadMore = () => {
+    if (loading || loadingMore || refreshing || fetchError || !hasMore) return;
+    setLoadingMore(true);
+    fetchReports(reports.length, false);
+  };
 
   const renderItem = ({ item }: { item: Report }) => (
     <TouchableOpacity onPress={() => navigation.navigate('Detail', { report: item })} activeOpacity={0.8}>
@@ -90,13 +126,59 @@ export default function BrowseScreen() {
     </TouchableOpacity>
   );
 
-  if (loading) {
+  const renderResults = () => {
+    if (loading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      );
+    }
+
+    if (fetchError) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Something went wrong loading reports</Text>
+          <Text style={styles.emptySubtext}>Check your connection and try again</Text>
+          <View style={styles.retryButtonWrapper}>
+            <Button
+              title="Retry"
+              onPress={() => {
+                setLoading(true);
+                fetchReports(0, true);
+              }}
+            />
+          </View>
+        </View>
+      );
+    }
+
+    if (reports.length === 0) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>No reports found</Text>
+          <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
+      <FlatList
+        data={reports}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          <View style={styles.footerLoader}>
+            {loadingMore ? <ActivityIndicator color={Colors.primary} /> : null}
+          </View>
+        }
+      />
     );
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -143,34 +225,7 @@ export default function BrowseScreen() {
         />
       </View>
 
-      {fetchError ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>Something went wrong loading reports</Text>
-          <Text style={styles.emptySubtext}>Check your connection and try again</Text>
-          <View style={styles.retryButtonWrapper}>
-            <Button
-              title="Retry"
-              onPress={() => {
-                setLoading(true);
-                fetchReports().finally(() => setLoading(false));
-              }}
-            />
-          </View>
-        </View>
-      ) : filteredReports.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No reports found</Text>
-          <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredReports}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        />
-      )}
+      {renderResults()}
     </View>
   );
 }
@@ -181,6 +236,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 4 },
   emptySubtext: { fontSize: 14, color: Colors.textSecondary },
   retryButtonWrapper: { marginTop: 16, width: '100%' },
+  footerLoader: { paddingVertical: 16, minHeight: 8 },
   filterBar: {
     paddingHorizontal: 16,
     paddingTop: 12,
