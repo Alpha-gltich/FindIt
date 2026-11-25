@@ -1,28 +1,48 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import {
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../constants/colors';
+import { Colors, Fonts, Radii, Spacing } from '../constants/colors';
+import AppShell from '../components/AppShell';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import SegmentedControl, { SegmentedOption } from '../components/SegmentedControl';
+import ReportCard from '../components/ReportCard';
+import SkeletonList from '../components/SkeletonList';
 import { supabase } from '../services/supabase';
 import { Report, RootStackParamList } from '../types/navigation';
 
 const CATEGORIES = ['All', 'Phone', 'Wallet', 'Keys', 'ID Card', 'Laptop', 'Other'];
-const TYPE_FILTERS = ['All', 'Lost', 'Found'] as const;
 const PAGE_SIZE = 20;
-// contact_info is deliberately not listed: it is only fetched on the detail screen for logged-in users.
 const LIST_COLUMNS =
   'id, user_id, type, item_name, description, category, location, photo_url, status, created_at';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type TypeFilter = 'All' | 'Lost' | 'Found';
 
-// Strip characters that have special meaning in filters so a search can't alter the query.
+const TYPE_FILTERS: SegmentedOption<TypeFilter>[] = [
+  { label: 'All', value: 'All' },
+  { label: 'Lost', value: 'Lost' },
+  { label: 'Found', value: 'Found' },
+];
+
 const sanitizeSearch = (text: string) =>
   text.replace(/[%_,()*\\"']/g, ' ').replace(/\s+/g, ' ').trim();
 
 export default function BrowseScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { width } = useWindowDimensions();
+  const columns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
+
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +51,7 @@ export default function BrowseScreen() {
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedType, setSelectedType] = useState<typeof TYPE_FILTERS[number]>('All');
+  const [selectedType, setSelectedType] = useState<TypeFilter>('All');
   const [fetchError, setFetchError] = useState(false);
   const requestCounter = useRef(0);
 
@@ -63,7 +83,6 @@ export default function BrowseScreen() {
 
       const { data, error } = await query;
 
-      // A newer request has started (filters changed): ignore this stale result.
       if (requestId !== requestCounter.current) return;
 
       if (error) {
@@ -102,45 +121,15 @@ export default function BrowseScreen() {
     fetchReports(reports.length, false);
   };
 
-  const renderItem = ({ item }: { item: Report }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('Detail', { report: item })} activeOpacity={0.8}>
-      <View style={styles.card}>
-        {item.photo_url ? (
-          <Image source={{ uri: item.photo_url }} style={styles.thumbnail} />
-        ) : (
-          <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-            <Text style={styles.thumbnailPlaceholderText}>No Photo</Text>
-          </View>
-        )}
-        <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.itemName} numberOfLines={1}>{item.item_name}</Text>
-            <View style={[styles.typeTag, item.type === 'lost' ? styles.lostTag : styles.foundTag]}>
-              <Text style={styles.typeTagText}>{item.type === 'lost' ? 'Lost' : 'Found'}</Text>
-            </View>
-          </View>
-          <Text style={styles.category}>{item.category}</Text>
-          <Text style={styles.location} numberOfLines={1}>{item.location}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   const renderResults = () => {
-    if (loading) {
-      return (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
-      );
-    }
+    if (loading) return <SkeletonList />;
 
     if (fetchError) {
       return (
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>Something went wrong loading reports</Text>
           <Text style={styles.emptySubtext}>Check your connection and try again</Text>
-          <View style={styles.retryButtonWrapper}>
+          <View style={styles.retryWrapper}>
             <Button
               title="Retry"
               onPress={() => {
@@ -164,121 +153,99 @@ export default function BrowseScreen() {
 
     return (
       <FlatList
+        key={columns}
         data={reports}
+        numColumns={columns}
+        columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+        renderItem={({ item }) => (
+          <View style={columns > 1 ? styles.gridItem : undefined}>
+            <ReportCard
+              report={item}
+              grid={columns > 1}
+              onPress={() => navigation.navigate('Detail', { report: item })}
+            />
+          </View>
+        )}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          <View style={styles.footerLoader}>
-            {loadingMore ? <ActivityIndicator color={Colors.primary} /> : null}
-          </View>
+          loadingMore ? <View style={styles.footerLoader} /> : undefined
         }
       />
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.filterBar}>
-        <Input
-          placeholder="Search items..."
-          value={searchText}
-          onChangeText={setSearchText}
-          style={styles.searchInput}
-        />
+    <AppShell title="Browse Reports" active="Browse">
+      <View style={styles.container}>
+        <View style={styles.filterBar}>
+          <Input
+            placeholder="Search items..."
+            value={searchText}
+            onChangeText={setSearchText}
+            containerStyle={styles.searchContainer}
+          />
 
-        <View style={styles.typeToggleRow}>
-          {TYPE_FILTERS.map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.typeToggle, selectedType === t && styles.typeToggleSelected]}
-              onPress={() => setSelectedType(t)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.typeToggleText, selectedType === t && styles.typeToggleTextSelected]}>
-                {t}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <SegmentedControl
+            options={TYPE_FILTERS}
+            value={selectedType}
+            onChange={setSelectedType}
+            style={styles.typeControl}
+          />
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryRow}
+          >
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.chip, selectedCategory === cat && styles.chipSelected]}
+                onPress={() => setSelectedCategory(cat)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextSelected]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        <FlatList
-          data={CATEGORIES}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.categoryRow}
-          renderItem={({ item: cat }) => (
-            <TouchableOpacity
-              style={[styles.chip, selectedCategory === cat && styles.chipSelected]}
-              onPress={() => setSelectedCategory(cat)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.chipText, selectedCategory === cat && styles.chipTextSelected]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
+        {renderResults()}
       </View>
-
-      {renderResults()}
-    </View>
+    </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  emptyText: { fontSize: 18, fontWeight: '600', color: Colors.text, marginBottom: 4 },
-  emptySubtext: { fontSize: 14, color: Colors.textSecondary },
-  retryButtonWrapper: { marginTop: 16, width: '100%' },
-  footerLoader: { paddingVertical: 16, minHeight: 8 },
-  filterBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+  container: {
+    flex: 1,
     backgroundColor: Colors.background,
   },
-  searchInput: {
-    marginBottom: 12,
+  filterBar: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    backgroundColor: Colors.background,
   },
-  typeToggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+  searchContainer: {
+    marginBottom: Spacing.sm,
   },
-  typeToggle: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-  },
-  typeToggleSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  typeToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  typeToggleTextSelected: {
-    color: Colors.white,
+  typeControl: {
+    marginBottom: Spacing.md,
   },
   categoryRow: {
-    gap: 8,
-    paddingBottom: 12,
+    gap: Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: Radii.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
@@ -287,28 +254,51 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  chipText: { fontSize: 14, color: Colors.text },
-  chipTextSelected: { color: Colors.white, fontWeight: '600' },
-  listContent: { padding: 16, paddingTop: 4 },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 12,
-    overflow: 'hidden',
+  chipText: {
+    fontSize: 13,
+    fontFamily: Fonts.semiBold,
+    color: Colors.text,
   },
-  thumbnail: { width: 88, height: 88 },
-  thumbnailPlaceholder: { backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
-  thumbnailPlaceholderText: { fontSize: 11, color: Colors.textSecondary },
-  cardContent: { flex: 1, padding: 12, justifyContent: 'center' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  itemName: { fontSize: 16, fontWeight: '700', color: Colors.text, flex: 1, marginRight: 8 },
-  typeTag: { paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10 },
-  lostTag: { backgroundColor: '#FEE2E2' },
-  foundTag: { backgroundColor: '#DCFCE7' },
-  typeTagText: { fontSize: 11, fontWeight: '700', color: Colors.text },
-  category: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
-  location: { fontSize: 13, color: Colors.textSecondary },
+  chipTextSelected: {
+    color: Colors.white,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    color: Colors.text,
+    marginBottom: Spacing.xs,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryWrapper: {
+    marginTop: Spacing.lg,
+    width: '100%',
+  },
+  listContent: {
+    padding: Spacing.lg,
+    paddingTop: Spacing.sm,
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
+  },
+  columnWrapper: {
+    gap: Spacing.lg,
+  },
+  gridItem: {
+    flex: 1,
+  },
+  footerLoader: {
+    paddingVertical: Spacing.lg,
+  },
 });

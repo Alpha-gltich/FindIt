@@ -9,6 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Required so password-reset and email-confirmation links work on web.
+    // Native uses the dashboard Site URL instead.
+    detectSessionInUrl: typeof window !== 'undefined',
   },
 });

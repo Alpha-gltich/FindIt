@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Alert } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors } from '../constants/colors';
+import { Colors, Fonts, Radii, Spacing } from '../constants/colors';
+import { showAlert, showConfirm } from '../utils/alert';
 import Button from '../components/Button';
+import FadeIn from '../components/FadeIn';
 import { supabase } from '../services/supabase';
 import { RootStackParamList } from '../types/navigation';
 
@@ -30,11 +32,8 @@ export default function ItemDetailScreen() {
       if (!user) return;
 
       setIsLoggedIn(true);
-      if (user.id === report.user_id) {
-        setIsOwner(true);
-      }
+      if (user.id === report.user_id) setIsOwner(true);
 
-      // Contact details are fetched only for logged-in users, never in the public list.
       const { data, error } = await supabase
         .from('reports')
         .select('contact_info')
@@ -64,25 +63,24 @@ export default function ItemDetailScreen() {
     setUpdating(false);
 
     if (error) {
-      Alert.alert('Update failed', error.message);
+      showAlert('Update failed', error.message);
       return;
     }
 
     setStatus(newStatus);
-    Alert.alert(
+    showAlert(
       'Status updated',
       newStatus === 'recovered' ? 'Marked as recovered.' : 'Marked as active again.'
     );
   };
 
   const handleEdit = () => {
-    // Editing saves contact_info too, so it must be loaded first or it could be overwritten with empty.
     if (!contactLoaded) {
-      Alert.alert('Please wait', 'Loading report details. Try again in a moment.');
+      showAlert('Please wait', 'Loading report details. Try again in a moment.');
       return;
     }
     if (contactError) {
-      Alert.alert('Could not load details', 'Check your connection, reopen this report and try again.');
+      showAlert('Could not load details', 'Check your connection, reopen this report and try again.');
       return;
     }
     navigation.navigate('EditReport', {
@@ -91,124 +89,93 @@ export default function ItemDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    showConfirm(
       'Delete this report?',
       'This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
+      async () => {
+        setDeleting(true);
+        const { error } = await supabase.from('reports').delete().eq('id', report.id);
+        setDeleting(false);
 
-            const { error } = await supabase
-              .from('reports')
-              .delete()
-              .eq('id', report.id);
-
-            setDeleting(false);
-
-            if (error) {
-              Alert.alert('Delete failed', error.message);
-              return;
-            }
-
-            navigation.goBack();
-          },
-        },
-      ]
+        if (error) {
+          showAlert('Delete failed', error.message);
+          return;
+        }
+        navigation.goBack();
+      },
+      { confirmLabel: 'Delete', destructive: true }
     );
   };
 
   const renderContactSection = () => {
     if (!isLoggedIn) {
-      return (
-        <>
-          <Text style={styles.label}>Contact</Text>
-          <Text style={styles.valueMuted}>Log in to view contact information</Text>
-        </>
-      );
+      return <Text style={styles.valueMuted}>Log in to view contact information</Text>;
     }
-
     if (contactError) {
-      return (
-        <>
-          <Text style={styles.label}>Contact</Text>
-          <Text style={styles.valueMuted}>Could not load contact info</Text>
-        </>
-      );
+      return <Text style={styles.valueMuted}>Could not load contact info</Text>;
     }
-
     if (!contactLoaded) {
-      return (
-        <>
-          <Text style={styles.label}>Contact</Text>
-          <Text style={styles.valueMuted}>Loading...</Text>
-        </>
-      );
+      return <Text style={styles.valueMuted}>Loading...</Text>;
     }
-
     if (!contactInfo) {
-      return (
-        <>
-          <Text style={styles.label}>Contact</Text>
-          <Text style={styles.valueMuted}>No contact info provided</Text>
-        </>
-      );
+      return <Text style={styles.valueMuted}>No contact info provided</Text>;
     }
-
-    return (
-      <>
-        <Text style={styles.label}>Contact</Text>
-        <Text style={styles.value}>{contactInfo}</Text>
-      </>
-    );
+    return <Text style={styles.value}>{contactInfo}</Text>;
   };
+
+  const isLost = report.type === 'lost';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {report.photo_url ? (
-        <Image source={{ uri: report.photo_url }} style={styles.photo} />
-      ) : (
-        <View style={[styles.photo, styles.photoPlaceholder]}>
-          <Text style={styles.photoPlaceholderText}>No Photo</Text>
-        </View>
-      )}
+      <FadeIn>
+        <View style={styles.photoCard}>
+        {report.photo_url ? (
+          <Image source={{ uri: report.photo_url }} style={styles.photo} />
+        ) : (
+          <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoPlaceholderText}>No Photo</Text>
+          </View>
+        )}
+      </View>
 
-      <View style={styles.header}>
+      <View style={styles.titleRow}>
         <Text style={styles.itemName}>{report.item_name}</Text>
-        <View style={[styles.typeTag, report.type === 'lost' ? styles.lostTag : styles.foundTag]}>
-          <Text style={styles.typeTagText}>{report.type === 'lost' ? 'Lost' : 'Found'}</Text>
+        <View style={[styles.typeTag, isLost ? styles.lostTag : styles.foundTag]}>
+          <Text style={[styles.typeTagText, isLost ? styles.lostText : styles.foundText]}>
+            {isLost ? 'Lost' : 'Found'}
+          </Text>
         </View>
       </View>
 
-      {status === 'recovered' && (
+      {status === 'recovered' ? (
         <View style={styles.recoveredBanner}>
           <Text style={styles.recoveredBannerText}>✓ This item has been marked as recovered</Text>
         </View>
-      )}
+      ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Description</Text>
-        <Text style={styles.value}>{report.description}</Text>
+      <View style={styles.detailsCard}>
+        <View style={styles.section}>
+          <Text style={styles.label}>Description</Text>
+          <Text style={styles.value}>{report.description}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Category</Text>
+          <Text style={styles.value}>{report.category}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Location</Text>
+          <Text style={styles.value}>📍 {report.location}</Text>
+        </View>
+
+        <View style={styles.sectionLast}>
+          <Text style={styles.label}>Contact</Text>
+          {renderContactSection()}
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Category</Text>
-        <Text style={styles.value}>{report.category}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Location</Text>
-        <Text style={styles.value}>{report.location}</Text>
-      </View>
-
-      <View style={styles.section}>
-        {renderContactSection()}
-      </View>
-
-      {isOwner && (
+      {isOwner ? (
         <View style={styles.ownerActions}>
           <Button
             title={status === 'active' ? 'Mark as Recovered' : 'Mark as Active'}
@@ -216,47 +183,133 @@ export default function ItemDetailScreen() {
             variant={status === 'active' ? 'secondary' : 'outline'}
             loading={updating}
           />
-          <Button
-            title="Edit Report"
-            onPress={handleEdit}
-            variant="outline"
-          />
+          <Button title="Edit Report" onPress={handleEdit} variant="outline" />
           <Button
             title="Delete Report"
             onPress={handleDelete}
-            variant="outline"
+            variant="danger"
             loading={deleting}
-            style={styles.deleteButton}
           />
         </View>
-      )}
+      ) : null}
+      </FadeIn>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 24 },
-  photo: { width: '100%', height: 240, borderRadius: 12, marginBottom: 20 },
-  photoPlaceholder: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center' },
-  photoPlaceholderText: { color: Colors.textSecondary, fontSize: 15 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  itemName: { fontSize: 24, fontWeight: '700', color: Colors.text, flex: 1, marginRight: 12 },
-  typeTag: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 12 },
-  lostTag: { backgroundColor: '#FEE2E2' },
-  foundTag: { backgroundColor: '#DCFCE7' },
-  typeTagText: { fontSize: 13, fontWeight: '700', color: Colors.text },
-  recoveredBanner: {
-    backgroundColor: '#DCFCE7',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  recoveredBannerText: { color: '#166534', fontSize: 14, fontWeight: '600' },
-  section: { marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase' },
-  value: { fontSize: 16, color: Colors.text, lineHeight: 22 },
-  valueMuted: { fontSize: 16, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 22 },
-  ownerActions: { gap: 12 },
-  deleteButton: { borderColor: '#EF4444' },
+  content: {
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  photoCard: {
+    borderRadius: Radii.lg,
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.lg,
+  },
+  photo: {
+    width: '100%',
+    height: 260,
+  },
+  photoPlaceholder: {
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primarySoft,
+  },
+  photoPlaceholderText: {
+    fontSize: 15,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.md,
+  },
+  itemName: {
+    flex: 1,
+    marginRight: Spacing.md,
+    fontSize: 24,
+    fontFamily: Fonts.extraBold,
+    color: Colors.text,
+  },
+  typeTag: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: Radii.pill,
+  },
+  lostTag: {
+    backgroundColor: Colors.dangerSoft,
+  },
+  foundTag: {
+    backgroundColor: Colors.successSoft,
+  },
+  typeTagText: {
+    fontSize: 12,
+    fontFamily: Fonts.bold,
+  },
+  lostText: {
+    color: Colors.lost,
+  },
+  foundText: {
+    color: Colors.found,
+  },
+  recoveredBanner: {
+    backgroundColor: Colors.successSoft,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  recoveredBannerText: {
+    color: Colors.successDark,
+    fontSize: 14,
+    fontFamily: Fonts.semiBold,
+  },
+  detailsCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  section: {
+    marginBottom: Spacing.lg,
+  },
+  sectionLast: {
+    marginBottom: 0,
+  },
+  label: {
+    fontSize: 12,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+  },
+  value: {
+    fontSize: 16,
+    fontFamily: Fonts.regular,
+    color: Colors.text,
+    lineHeight: 23,
+  },
+  valueMuted: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  ownerActions: {
+    gap: Spacing.md,
+  },
 });

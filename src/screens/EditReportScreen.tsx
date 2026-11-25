@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors } from '../constants/colors';
+import { Colors, Fonts, Radii, Spacing } from '../constants/colors';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import FadeIn from '../components/FadeIn';
+import PhotoPicker from '../components/PhotoPicker';
+import { showAlert } from '../utils/alert';
 import { supabase } from '../services/supabase';
 import { uploadPickedPhoto } from '../services/photoUpload';
 import { RootStackParamList } from '../types/navigation';
@@ -34,7 +37,7 @@ export default function EditReportScreen() {
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please allow photo access to attach a picture.');
+      showAlert('Permission needed', 'Please allow photo access to attach a picture.');
       return;
     }
 
@@ -49,7 +52,7 @@ export default function EditReportScreen() {
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
       if (!asset.base64) {
-        Alert.alert('Photo could not be read', 'Please choose that photo again.');
+        showAlert('Photo could not be read', 'Please choose that photo again.');
         return;
       }
       setPhotoUri(asset.uri);
@@ -61,18 +64,17 @@ export default function EditReportScreen() {
   const handleSave = async () => {
     if (!itemName.trim() || !description.trim() || !category || !location.trim()) {
       setCategoryError(!category);
-      Alert.alert('Missing info', 'Please fill in all fields, including a category.');
+      showAlert('Missing info', 'Please fill in all fields, including a category.');
       return;
     }
     setCategoryError(false);
-
     setLoading(true);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
       setLoading(false);
-      Alert.alert('Not logged in', 'Please log in to edit this report.');
+      showAlert('Not logged in', 'Please log in to edit this report.');
       return;
     }
 
@@ -83,7 +85,7 @@ export default function EditReportScreen() {
         photoUrl = await uploadPickedPhoto(photoBase64, user.id);
       } catch (uploadErr: any) {
         setLoading(false);
-        Alert.alert('Photo upload failed', uploadErr.message || 'Please try again.');
+        showAlert('Photo upload failed', uploadErr.message || 'Please try again.');
         return;
       }
     }
@@ -103,38 +105,34 @@ export default function EditReportScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Update failed', error.message);
+      showAlert('Update failed', error.message);
       return;
     }
 
-    Alert.alert('Report updated', 'Your changes have been saved.');
+    showAlert('Report updated', 'Your changes have been saved.');
     navigation.goBack();
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Edit Report</Text>
-      <Text style={styles.subtitle}>Update the details of your {report.type} item</Text>
+      <FadeIn>
+        <View style={styles.heading}>
+        <Text style={styles.kicker}>Edit report</Text>
+        <Text style={styles.title}>Edit Report</Text>
+        <Text style={styles.subtitle}>Update the details of your {report.type} item.</Text>
+      </View>
 
-      <Text style={styles.label}>Photo</Text>
-      {photoUri ? (
-        <TouchableOpacity onPress={handlePickImage} disabled={loading}>
-          <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-          <Text style={styles.changePhotoText}>Tap to change photo</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.photoPicker} onPress={handlePickImage} disabled={loading}>
-          <Text style={styles.photoPickerText}>+ Add Photo</Text>
-        </TouchableOpacity>
-      )}
+      <PhotoPicker uri={photoUri} onPress={handlePickImage} disabled={loading} label="Photo" />
 
       <Input
+        label="Item Name"
         placeholder="Item name"
         value={itemName}
         onChangeText={setItemName}
         editable={!loading}
       />
       <Input
+        label="Description"
         placeholder="Description"
         value={description}
         onChangeText={setDescription}
@@ -165,56 +163,97 @@ export default function EditReportScreen() {
       </View>
 
       <Input
+        label="Campus Location"
         placeholder="Location"
         value={location}
         onChangeText={setLocation}
         editable={!loading}
       />
-
       <Input
-        placeholder="Phone or email (optional, shown to other users)"
+        label="Contact Info"
+        placeholder="Phone or email"
         value={contactInfo}
         onChangeText={setContactInfo}
+        helper="Optional. Visible to logged-in users only."
         editable={!loading}
       />
 
       <Button title="Save Changes" onPress={handleSave} variant="primary" loading={loading} />
+      </FadeIn>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 24 },
-  title: { fontSize: 24, fontWeight: '700', color: Colors.text, marginBottom: 8 },
-  subtitle: { fontSize: 16, color: Colors.textSecondary, marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 8 },
-  labelError: { color: '#DC2626' },
-  photoPicker: {
-    height: 140,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  photoPickerText: { color: Colors.textSecondary, fontSize: 16, fontWeight: '600' },
-  photoPreview: { width: '100%', height: 180, borderRadius: 12, marginBottom: 4 },
-  changePhotoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: 16 },
-  textArea: { height: 100, paddingTop: 12, textAlignVertical: 'top' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  content: {
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  heading: {
+    marginBottom: Spacing.xl,
+  },
+  kicker: {
+    fontSize: 12,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: Fonts.extraBold,
+    color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: Fonts.semiBold,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  labelError: {
+    color: Colors.danger,
+  },
+  textArea: {
+    height: 110,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: Radii.pill,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 14, color: Colors.text },
-  chipTextSelected: { color: Colors.white, fontWeight: '600' },
+  chipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    fontSize: 13,
+    fontFamily: Fonts.semiBold,
+    color: Colors.text,
+  },
+  chipTextSelected: {
+    color: Colors.white,
+  },
 });

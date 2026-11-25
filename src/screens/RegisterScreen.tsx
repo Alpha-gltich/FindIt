@@ -1,14 +1,25 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import { Colors } from '../constants/colors';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors, Fonts, Spacing } from '../constants/colors';
+import Logo from '../components/Logo';
+import FadeIn from '../components/FadeIn';
+import SegmentedControl, { SegmentedOption } from '../components/SegmentedControl';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { showAlert } from '../utils/alert';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { RootStackParamList } from '../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+type AuthTab = 'login' | 'register';
+
+const AUTH_TABS: SegmentedOption<AuthTab>[] = [
+  { label: 'Log In', value: 'login' },
+  { label: 'Register', value: 'register' },
+];
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -19,11 +30,11 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
-      Alert.alert('Missing info', 'Please fill in all fields.');
+      showAlert('Missing info', 'Please fill in all fields.');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Weak password', 'Password must be at least 6 characters.');
+      showAlert('Weak password', 'Password must be at least 6 characters.');
       return;
     }
 
@@ -38,12 +49,12 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Registration failed', error.message);
+      showAlert('Registration failed', error.message);
       return;
     }
 
     if (!data.session) {
-      Alert.alert(
+      showAlert(
         'Check your email',
         'We sent a confirmation link to your email. Please confirm your account, then log in.'
       );
@@ -55,18 +66,37 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
+      <FadeIn>
+        <View style={styles.brand}>
+        <Logo size="large" showTagline animate />
+      </View>
+
+      <SegmentedControl
+        options={AUTH_TABS}
+        value="register"
+        onChange={(value) => {
+          if (value === 'login') navigation.navigate('Login');
+        }}
+      />
+
       <Text style={styles.title}>Create account</Text>
       <Text style={styles.subtitle}>Join FindIt to report and recover items</Text>
 
       <Input
-        placeholder="Full name"
+        label="Full name"
+        placeholder="Your name"
         value={name}
         onChangeText={setName}
         editable={!loading}
       />
       <Input
-        placeholder="Email"
+        label="Campus Email"
+        placeholder="you@school.edu"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -74,10 +104,12 @@ export default function RegisterScreen() {
         editable={!loading}
       />
       <Input
-        placeholder="Password"
+        label="Password"
+        placeholder="At least 6 characters"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        helper="Use a password you have not used elsewhere."
         editable={!loading}
       />
 
@@ -92,12 +124,14 @@ export default function RegisterScreen() {
         onPress={() => navigation.navigate('Login')}
         disabled={loading}
         style={styles.linkWrapper}
+        accessibilityRole="button"
       >
         <Text style={styles.linkText}>
           Already have an account? <Text style={styles.linkTextBold}>Log In</Text>
         </Text>
       </TouchableOpacity>
-    </View>
+      </FadeIn>
+    </ScrollView>
   );
 }
 
@@ -105,30 +139,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: 24,
-    justifyContent: 'center',
+  },
+  content: {
+    flexGrow: 1,
+    padding: Spacing.xl,
+    paddingTop: Spacing.xxl,
+  },
+  brand: {
+    alignItems: 'center',
+    marginBottom: Spacing.xxl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: Fonts.extraBold,
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: Fonts.regular,
     color: Colors.textSecondary,
-    marginBottom: 32,
+    marginBottom: Spacing.xl,
   },
   linkWrapper: {
-    marginTop: 20,
+    marginTop: Spacing.xl,
     alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   linkText: {
     fontSize: 14,
+    fontFamily: Fonts.regular,
     color: Colors.textSecondary,
   },
   linkTextBold: {
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.primary,
   },
 });

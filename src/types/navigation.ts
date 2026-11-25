@@ -19,6 +19,7 @@ export type RootStackParamList = {
   Browse: undefined;
   Login: undefined;
   Register: undefined;
+  ResetPassword: undefined;
   Detail: { report: Report };
   MyReports: undefined;
   EditReport: { report: Report };
