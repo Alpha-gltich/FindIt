@@ -113,6 +113,20 @@ export default function HomeScreen() {
             </>
           )}
         </View>
+
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => navigation.navigate('Privacy')}>
+            <Text style={styles.legalLink}>Privacy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDivider}>•</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Terms')}>
+            <Text style={styles.legalLink}>Terms</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDivider}>•</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('DeleteAccount')}>
+            <Text style={[styles.legalLink, styles.deleteLink]}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </Animated.ScrollView>
   );
@@ -192,5 +206,27 @@ const styles = StyleSheet.create({
   },
   buttonStack: {
     gap: Spacing.md,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  legalLink: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontFamily: Fonts.medium,
+    textDecorationLine: 'underline',
+  },
+  deleteLink: {
+    color: Colors.danger,
+  },
+  legalDivider: {
+    color: Colors.borderStrong,
+    fontSize: 13,
+    fontFamily: Fonts.regular,
   },
 });

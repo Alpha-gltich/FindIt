@@ -21,8 +21,8 @@ export default function ResetPasswordScreen() {
   const [done, setDone] = useState(false);
 
   const handleUpdate = async () => {
-    if (password.length < 6) {
-      setMessage('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setMessage('Password must be at least 8 characters.');
       return;
     }
     if (password !== confirmPassword) {
@@ -71,7 +71,7 @@ export default function ResetPasswordScreen() {
         <View>
           <Input
             label="New password"
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

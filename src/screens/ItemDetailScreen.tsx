@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Fonts, Radii, Spacing } from '../constants/colors';
+import { WHATSAPP_GROUP_URL } from '../constants/legal';
 import { showAlert, showConfirm } from '../utils/alert';
 import Button from '../components/Button';
 import FadeIn from '../components/FadeIn';
@@ -107,6 +108,22 @@ export default function ItemDetailScreen() {
     );
   };
 
+  const handleOpenWhatsApp = () => {
+    const url = WHATSAPP_GROUP_URL.trim();
+
+    if (!url) {
+      showAlert(
+        'WhatsApp group',
+        'The WhatsApp group link will be added before launch.'
+      );
+      return;
+    }
+
+    Linking.openURL(url).catch(() => {
+      showAlert('Could not open WhatsApp', 'Please try again in a moment.');
+    });
+  };
+
   const renderContactSection = () => {
     if (!isLoggedIn) {
       return <Text style={styles.valueMuted}>Log in to view contact information</Text>;
@@ -173,6 +190,14 @@ export default function ItemDetailScreen() {
           <Text style={styles.label}>Contact</Text>
           {renderContactSection()}
         </View>
+      </View>
+
+      <View style={styles.communityAction}>
+        <Button
+          title={WHATSAPP_GROUP_URL ? 'Open WhatsApp Group' : 'WhatsApp Group (coming soon)'}
+          onPress={handleOpenWhatsApp}
+          variant="secondary"
+        />
       </View>
 
       {isOwner ? (
@@ -308,6 +333,9 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontStyle: 'italic',
     lineHeight: 22,
+  },
+  communityAction: {
+    marginBottom: Spacing.lg,
   },
   ownerActions: {
     gap: Spacing.md,

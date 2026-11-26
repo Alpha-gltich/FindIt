@@ -23,4 +23,7 @@ export type RootStackParamList = {
   Detail: { report: Report };
   MyReports: undefined;
   EditReport: { report: Report };
+  Privacy: undefined;
+  Terms: undefined;
+  DeleteAccount: undefined;
 };
