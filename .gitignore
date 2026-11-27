@@ -42,6 +42,3 @@ yarn-error.*
 
 .env
 .env.*
-
-# unrelated local project kept outside FindIt's git status
-quant-bot/
