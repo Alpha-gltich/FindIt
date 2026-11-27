@@ -6,7 +6,7 @@
 - Vercel project: `cpital-hub/findit-campus`
 - Repository: `https://github.com/Alpha-gltich/FindIt.git`
 - Production branch: `main`
-- Hardening commits include `c1b728c` (public launch hardening), `b0184ac` (admin flag moderation), `6446fc4` (audit retention), `32da5d6` (resolved deletion-request expiry), and `f569104` (in-app deletion-request review).
+- Hardening commits include `c1b728c` (public launch hardening), `b0184ac` (admin flag moderation), `6446fc4` (audit retention), `32da5d6` (resolved deletion-request expiry), `f569104` (in-app deletion-request review), and `330355f` (safe pg_cron retention check).
 
 ## Verified technical status
 
@@ -38,6 +38,7 @@
 - Admin moderation keeps contact numbers hidden until an admin explicitly reveals one; every reveal is written to `public.contact_reveal_audit`, and a failed log blocks the reveal.
 - Admins can clear flags after review; every clear is written to `public.report_flag_clear_audit`, and a failed log blocks the clear.
 - Audit rows and resolved deletion requests expire after 180 days through `20261127_audit_retention.sql`; pending deletion requests are retained, and the cleanup function is not callable by app clients.
+- The designated admin email is `theogodwin2509@gmail.com`; the admin bootstrap SQL is recorded in `docs/ADMIN_RUNBOOK.md` and still has to be run in the Supabase dashboard.
 - Readiness: controlled pilot is acceptable; uncontrolled launch with hundreds still requires Supabase Pro/custom SMTP/CAPTCHA, applying the new migrations, backups, and legal review first.
 
 ## Pending owner/operator actions
@@ -85,11 +86,11 @@ If ownership cannot be transferred immediately, record who currently controls ea
 
 ### 6. Admin bootstrap
 
-After the buyer confirms the staff account, add it to the admin table in the Supabase SQL Editor:
+The designated staff account is `theogodwin2509@gmail.com`. After confirming it has registered, add it to the admin table in the Supabase SQL Editor:
 
 ```sql
 insert into public.admin_users (user_id)
-select id from auth.users where email = 'STAFF_EMAIL_HERE'
+select id from auth.users where email = 'theogodwin2509@gmail.com'
 on conflict (user_id) do nothing;
 ```
 

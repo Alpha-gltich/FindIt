@@ -32,15 +32,15 @@ The complete dashboard-only checklist is in `docs/PUBLIC_LAUNCH_CHECKLIST.md`.
 
 ### 1. Bootstrap an admin user
 
-After confirming the staff email already registered in FindIt, run this in the Supabase SQL Editor:
+The designated admin email is `theogodwin2509@gmail.com`. After confirming it has registered in FindIt, run this in the Supabase SQL Editor:
 
 ```sql
 insert into public.admin_users (user_id)
-select id from auth.users where email = 'STAFF_EMAIL_HERE'
+select id from auth.users where email = 'theogodwin2509@gmail.com'
 on conflict (user_id) do nothing;
 ```
 
-Replace `STAFF_EMAIL_HERE` with the real registered admin email.
+If the verification query returns no row, the account has not registered yet; register it first, then rerun the SQL.
 
 ### 2. Confirm admin membership
 

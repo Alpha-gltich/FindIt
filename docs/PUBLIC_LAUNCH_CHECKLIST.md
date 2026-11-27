@@ -35,12 +35,12 @@ The app, RLS policies, storage rules, deployed headers, and email confirmation a
    - Record the last backup date here: ______________
 
 6. **Bootstrap the admin account.**
-   - Register the real staff email first.
+   - Register the designated staff email `theogodwin2509@gmail.com` first.
    - Run this in the SQL Editor:
 
 ```sql
 insert into public.admin_users (user_id)
-select id from auth.users where email = 'STAFF_EMAIL_HERE'
+select id from auth.users where email = 'theogodwin2509@gmail.com'
 on conflict (user_id) do nothing;
 ```
 
