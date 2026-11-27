@@ -142,6 +142,22 @@ CHARS: 1196104
 
 The live bundle contains the moderation flag-clear controls, both audit tabs, and the form length guard.
 
+### `GET /_expo/static/js/web/index-1f3b2ebc50953cb128b6ae64f383b2ee.js`
+
+```text
+FOUND: Deletion Requests
+FOUND: account_deletion_requests
+FOUND: Deletion requests
+FOUND: Pending (
+FOUND: Resolved (
+FOUND: Cancel request
+FOUND: Clear flags
+FOUND: report_flag_clear_audit
+CHARS: 1204055
+```
+
+The live bundle contains the admin deletion-request review screen and its pending/resolved tabs.
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`

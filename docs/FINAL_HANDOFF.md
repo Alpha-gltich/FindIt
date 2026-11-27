@@ -6,7 +6,7 @@
 - Vercel project: `cpital-hub/findit-campus`
 - Repository: `https://github.com/Alpha-gltich/FindIt.git`
 - Production branch: `main`
-- Hardening commits: `c1b728c` — `feat: harden app for public launch`; `b0184ac` — `feat: add admin flag moderation controls`.
+- Hardening commits include `c1b728c` (public launch hardening), `b0184ac` (admin flag moderation), `6446fc4` (audit retention), `32da5d6` (resolved deletion-request expiry), and `f569104` (in-app deletion-request review).
 
 ## Verified technical status
 
@@ -15,7 +15,7 @@
 - GitHub Actions runs type-check and web export on pushes and pull requests.
 - Live production URL returns `HTTP/1.1 200 OK`.
 - Deployed bundle verification on 27 November 2026 found `Reveal contact`, `Admin Moderation`, `contact_reveal_audit`, and `compressPickedPhoto` in the live JavaScript.
-- Latest deployed bundle verification found `Clear flags`, `report_flag_clear_audit`, `Contact reveals`, `Flag clears`, `Too much text`, and `compressPickedPhoto` in the live JavaScript.
+- Latest deployed bundle verification found `Deletion Requests`, `account_deletion_requests`, `Pending (`, `Resolved (`, `Cancel request`, `Clear flags`, and `report_flag_clear_audit` in the live JavaScript.
 - Live security headers verified: CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and HSTS.
 - `https://findit-campus-ng.vercel.app` is the only active FindIt alias. Vercel can re-add default aliases on future deployments; remove them if a single public URL is required.
 - Supabase Auth Site URL and redirect URLs are configured for `https://findit-campus-ng.vercel.app/`.
