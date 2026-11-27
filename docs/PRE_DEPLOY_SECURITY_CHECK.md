@@ -100,6 +100,20 @@ HTTP 200
 
 A real-email test was completed on 27 November 2026: registration showed the "Check your email" message, the confirmation link landed the user logged in, and a subsequent logout/login succeeded.
 
+## Deployed headers — raw response
+
+### `GET https://findit-campus-ng.vercel.app/?cb=20261127`
+
+```text
+HTTP/1.1 200 OK
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://bkgtlddjmfkjfmjeogzu.supabase.co; font-src 'self' data:; connect-src 'self' https://bkgtlddjmfkjfmjeogzu.supabase.co wss://bkgtlddjmfkjfmjeogzu.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: strict-origin-when-cross-origin
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+```
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`

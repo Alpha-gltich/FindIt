@@ -13,6 +13,8 @@
 - TypeScript check passes: `npx tsc --noEmit`.
 - Web export passes: `npx expo export -p web`.
 - Live production URL returns `HTTP/1.1 200 OK`.
+- Live security headers verified: CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and HSTS.
+- `https://findit-campus-ng.vercel.app` is the only active FindIt alias. Vercel can re-add default aliases on future deployments; remove them if a single public URL is required.
 - Supabase Auth Site URL and redirect URLs are configured for `https://findit-campus-ng.vercel.app/`.
 - Live Supabase Auth settings confirm: email provider enabled, signup enabled, and `mailer_autoconfirm: false`, so a new email must be confirmed before it is active.
 - On web, `detectSessionInUrl: true` lets the confirmation link exchange its token and sign the user in; the redirect destination does not decide which email is confirmed. Supabase ties the confirmation token to the newly registered email.
@@ -27,6 +29,8 @@
 - Security decisions and raw test output are recorded in:
   - `docs/SECURITY_DECISIONS.md`
   - `docs/PRE_DEPLOY_SECURITY_CHECK.md`
+- Admin procedures and the public-readiness verdict are in `docs/ADMIN_RUNBOOK.md`.
+- Readiness: controlled pilot is acceptable; uncontrolled launch with hundreds needs Supabase Pro/custom SMTP/CAPTCHA, abuse moderation, upload limits, backups, and legal review first.
 
 ## Pending owner/operator actions
 
