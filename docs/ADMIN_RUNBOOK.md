@@ -72,6 +72,7 @@ Run these in the Supabase SQL Editor in this exact order:
 5. `supabase/migrations/20261127_contact_reveal_audit.sql`
 6. `supabase/migrations/20261127_report_flags.sql`
 7. `supabase/migrations/20261127_hide_flagged_reports.sql`
+8. `supabase/migrations/20261127_audit_retention.sql`
 
 Then run **Database → Security Advisor** and fix any new warnings.
 
@@ -145,6 +146,26 @@ limit 50;
 ```
 
 The app writes these rows before allowing the action. If the write fails, the reveal or flag clear is blocked.
+
+### Audit retention
+
+Audit rows expire after **180 days**.
+
+If pg_cron is enabled, the migration schedules a daily cleanup at **03:17 UTC** named `findit-expire-old-audit-logs`. Check it with:
+
+```sql
+select jobid, jobname, schedule, command
+from cron.job
+where jobname = 'findit-expire-old-audit-logs';
+```
+
+If pg_cron is unavailable, run cleanup manually when needed:
+
+```sql
+select public.expire_old_audit_logs();
+```
+
+Only `postgres` is allowed to execute the cleanup function. Anon and authenticated clients cannot call it.
 
 ### Recent storage objects
 

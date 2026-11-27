@@ -52,6 +52,7 @@ on conflict (user_id) do nothing;
    - Run `supabase/migrations/20261127_contact_reveal_audit.sql`.
    - Run `supabase/migrations/20261127_report_flags.sql`.
    - Run `supabase/migrations/20261127_hide_flagged_reports.sql`.
+   - Run `supabase/migrations/20261127_audit_retention.sql`.
 
 8. **Verify the new policies.**
    - Run Security Advisor and fix any new warnings.
@@ -59,6 +60,8 @@ on conflict (user_id) do nothing;
    - Confirm an admin can delete a test report and its photo.
    - Confirm an admin can clear a test flag and that `public.report_flag_clear_audit` gets one row.
    - Confirm a non-admin cannot delete `public.report_flags` or read either audit table.
+   - Confirm `public.expire_old_audit_logs()` is not executable by `anon` or `authenticated`.
+   - If pg_cron is available, confirm the `findit-expire-old-audit-logs` job exists.
 
 ## You must do these outside the code
 
@@ -77,6 +80,7 @@ on conflict (user_id) do nothing;
 - Gives admins a moderation screen to view flagged reports, open them, clear flags, and delete reports plus attached photos.
 - Keeps contact numbers hidden in the moderation list until an admin explicitly reveals one, and logs every reveal.
 - Logs every flag clear with the admin, report, and number of flags cleared.
+- Expires audit rows after 180 days.
 - Runs type-check and web export in GitHub Actions on every push and pull request.
 
 ## Remaining caveats
