@@ -6,7 +6,7 @@ Date: 27 November 2026
 
 The web app is functional, RLS-protected, and ready for a **controlled pilot**. I would not call it ready for an uncontrolled public launch with hundreds of users yet.
 
-Vercel can serve the static SPA at that scale. The likely bottlenecks are Supabase Auth email delivery, database/API limits on the Free plan, storage growth, and abuse/moderation.
+Vercel can serve the static SPA at that scale. The remaining bottlenecks are Supabase Auth email delivery, database/API limits on the Free plan, storage growth, and abuse/moderation.
 
 ### Safe enough for a controlled pilot if
 
@@ -21,10 +21,12 @@ Vercel can serve the static SPA at that scale. The likely bottlenecks are Supaba
 - Custom SMTP for Supabase Auth emails. Default email limits can throttle signup and reset emails.
 - CAPTCHA on signup/login, with the secret kept server-side.
 - Supabase Pro or higher for stronger password/rate-limit controls and predictable capacity.
-- A moderation process for fraudulent or abusive reports.
-- Per-user upload limits or photo compression; currently the bucket allows 5 MB per file with no per-user quota.
+- Use the in-app admin moderation screen for fraudulent or abusive reports.
+- Apply the report/upload abuse-limit migrations before the test.
 - Backups and an incident contact.
 - Legal review of the Privacy Policy and Terms.
+
+The complete dashboard-only checklist is in `docs/PUBLIC_LAUNCH_CHECKLIST.md`.
 
 ## Immediate admin setup
 
@@ -59,6 +61,18 @@ where schemaname = 'public' and tablename = 'account_deletion_requests';
 
 Expected: `rowsecurity = true`.
 
+### 4. Apply the hardening migrations
+
+Run these in the Supabase SQL Editor in this exact order:
+
+1. `supabase/migrations/20261127_abuse_limits_preflight.sql`
+2. Continue only if every `bad_users` value is `0`.
+3. `supabase/migrations/20261127_abuse_limits.sql`
+4. `supabase/migrations/20261127_admin_storage_delete.sql`
+5. `supabase/migrations/20261127_contact_reveal_audit.sql`
+
+Then run **Database → Security Advisor** and fix any new warnings.
+
 ## Daily admin checks
 
 ### Pending deletion requests
@@ -82,6 +96,10 @@ Delete the auth user through **Authentication → Users** in the Supabase dashbo
 
 ### Recent reports for moderation
 
+Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, keeps contact numbers hidden until an admin taps **Reveal contact** on that report, logs each reveal, opens report details, and deletes a report plus its attached photo. A reveal is only shown after the audit-log write succeeds.
+
+You can also review reports in SQL:
+
 ```sql
 select id, user_id, type, item_name, status, location, created_at
 from public.reports
@@ -89,7 +107,17 @@ order by created_at desc
 limit 50;
 ```
 
-Delete abusive reports in the Supabase SQL Editor or use the owner/admin apps where available.
+### Contact reveal audit
+
+```sql
+select cra.created_at, u.email, cra.report_id
+from public.contact_reveal_audit cra
+left join auth.users u on u.id = cra.admin_user_id
+order by cra.created_at desc
+limit 50;
+```
+
+The app writes one row each time an admin reveals a contact number. If the write fails, the number is not revealed.
 
 ### Recent storage objects
 
@@ -117,7 +145,7 @@ In the Supabase dashboard, check:
 1. Start with 10–20 users, then scale up only if signup emails arrive quickly.
 2. Watch the support inbox `findit.support00@gmail.com`.
 3. Watch Supabase Auth logs for throttling or email errors.
-4. Watch Storage usage; large photos can consume the free allowance quickly.
+4. Watch Storage usage; compression reduces growth but hundreds of photos still add up.
 5. Keep a simple incident note: time, affected users, error message, action taken.
 
 ## After the test

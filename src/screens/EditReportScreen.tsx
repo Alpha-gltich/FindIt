@@ -10,6 +10,7 @@ import FadeIn from '../components/FadeIn';
 import PhotoPicker from '../components/PhotoPicker';
 import { showAlert } from '../utils/alert';
 import { supabase } from '../services/supabase';
+import { compressPickedPhoto } from '../services/photoCompression';
 import { uploadPickedPhoto } from '../services/photoUpload';
 import { RootStackParamList } from '../types/navigation';
 
@@ -49,15 +50,23 @@ export default function EditReportScreen() {
       aspect: [4, 3],
     });
 
-    if (!result.canceled && result.assets.length > 0) {
-      const asset = result.assets[0];
-      if (!asset.base64) {
-        showAlert('Photo could not be read', 'Please choose that photo again.');
-        return;
-      }
+    if (result.canceled || result.assets.length === 0) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      showAlert('Photo could not be read', 'Please choose that photo again.');
+      return;
+    }
+
+    try {
+      const compressed = await compressPickedPhoto(asset.uri, asset.base64);
       setPhotoUri(asset.uri);
-      setPhotoBase64(asset.base64);
+      setPhotoBase64(compressed);
       setPhotoChanged(true);
+    } catch (error: any) {
+      showAlert('Photo could not be prepared', error?.message || 'Please choose that photo again.');
     }
   };
 
@@ -117,68 +126,68 @@ export default function EditReportScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FadeIn>
         <View style={styles.heading}>
-        <Text style={styles.kicker}>Edit report</Text>
-        <Text style={styles.title}>Edit Report</Text>
-        <Text style={styles.subtitle}>Update the details of your {report.type} item.</Text>
-      </View>
+          <Text style={styles.kicker}>Edit report</Text>
+          <Text style={styles.title}>Edit Report</Text>
+          <Text style={styles.subtitle}>Update the details of your {report.type} item.</Text>
+        </View>
 
-      <PhotoPicker uri={photoUri} onPress={handlePickImage} disabled={loading} label="Photo" />
+        <PhotoPicker uri={photoUri} onPress={handlePickImage} disabled={loading} label="Photo" />
 
-      <Input
-        label="Item Name"
-        placeholder="Item name"
-        value={itemName}
-        onChangeText={setItemName}
-        editable={!loading}
-      />
-      <Input
-        label="Description"
-        placeholder="Description"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={4}
-        style={styles.textArea}
-        editable={!loading}
-      />
+        <Input
+          label="Item Name"
+          placeholder="Item name"
+          value={itemName}
+          onChangeText={setItemName}
+          editable={!loading}
+        />
+        <Input
+          label="Description"
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          style={styles.textArea}
+          editable={!loading}
+        />
 
-      <Text style={[styles.label, categoryError && styles.labelError]}>Category</Text>
-      <View style={styles.chipRow}>
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[styles.chip, category === cat && styles.chipSelected]}
-            onPress={() => {
-              setCategory(cat);
-              setCategoryError(false);
-            }}
-            activeOpacity={0.8}
-            disabled={loading}
-          >
-            <Text style={[styles.chipText, category === cat && styles.chipTextSelected]}>
-              {cat}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        <Text style={[styles.label, categoryError && styles.labelError]}>Category</Text>
+        <View style={styles.chipRow}>
+          {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.chip, category === cat && styles.chipSelected]}
+              onPress={() => {
+                setCategory(cat);
+                setCategoryError(false);
+              }}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
+              <Text style={[styles.chipText, category === cat && styles.chipTextSelected]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <Input
-        label="Campus Location"
-        placeholder="Location"
-        value={location}
-        onChangeText={setLocation}
-        editable={!loading}
-      />
-      <Input
-        label="Contact Info"
-        placeholder="Phone or email"
-        value={contactInfo}
-        onChangeText={setContactInfo}
-        helper="Optional. Visible to logged-in users only."
-        editable={!loading}
-      />
+        <Input
+          label="Campus Location"
+          placeholder="Location"
+          value={location}
+          onChangeText={setLocation}
+          editable={!loading}
+        />
+        <Input
+          label="Contact Info"
+          placeholder="Phone or email"
+          value={contactInfo}
+          onChangeText={setContactInfo}
+          helper="Optional. Visible to logged-in users only."
+          editable={!loading}
+        />
 
-      <Button title="Save Changes" onPress={handleSave} variant="primary" loading={loading} />
+        <Button title="Save Changes" onPress={handleSave} variant="primary" loading={loading} />
       </FadeIn>
     </ScrollView>
   );

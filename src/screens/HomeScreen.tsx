@@ -16,6 +16,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { session } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -25,6 +26,33 @@ export default function HomeScreen() {
       useNativeDriver: true,
     }).start();
   }, [fade]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!session) {
+      setIsAdmin(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    supabase.rpc('is_admin').then(({ data, error }) => {
+      if (!active) {
+        return;
+      }
+      if (error) {
+        console.warn('Could not check admin status:', error.message);
+        setIsAdmin(false);
+        return;
+      }
+      setIsAdmin(Boolean(data));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   const handleLogout = async () => {
     setSigningOut(true);
@@ -91,6 +119,13 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('MyReports')}
             variant="outline"
           />
+          {session && isAdmin ? (
+            <Button
+              title="Admin Moderation"
+              onPress={() => navigation.navigate('AdminModeration')}
+              variant="outline"
+            />
+          ) : null}
           {session ? (
             <Button
               title={signingOut ? 'Logging out...' : 'Log out'}

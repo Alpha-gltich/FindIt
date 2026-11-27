@@ -9,12 +9,13 @@ A mobile lost-and-found app built for a university/campus community. Report item
 - **Browse reports**: search by keyword, filter by category, and toggle between Lost/Found
 - **Item detail view**: full report details; contact info is shown in the app only to logged-in users
 - **My Reports**: view, edit, mark as recovered, or delete your own submitted reports
-- **Photo upload**: attach a photo to any report, stored via Supabase Storage
+- **Photo upload**: attach a compressed photo to any report, stored via Supabase Storage
+- **Admin moderation**: staff-only screen to review, audit-logged contact reveal, and delete reports plus photos
 - **Error handling**: validation on all forms, retry-able error states on network failures
 
 ## Tech Stack
 
-- **Frontend:** React Native (Expo SDK 57), TypeScript, React Navigation
+- **Frontend:** React Native (Expo SDK 58), TypeScript, React Navigation
 - **Backend:** Supabase (Auth, PostgreSQL, Storage)
 - **State/Auth:** React Context (`AuthContext`) for session persistence via AsyncStorage
 
@@ -54,14 +55,14 @@ FindIt/
 | contact_info | text | Nullable, optional at submission |
 | created_at | timestamptz | |
 
-RLS policies: public read access; insert, update and delete are limited to the report's owner (`auth.uid() = user_id`).
+RLS policies: public read access to intended columns; insert, update and delete are limited to the report's owner (`auth.uid() = user_id`) or an admin in `public.admin_users`. Contact info is not readable by anonymous clients.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js and npm
-- Expo Go (iOS/Android) on a version that supports Expo SDK 57, or an emulator/simulator
+- Expo Go (iOS/Android) on a version that supports Expo SDK 58, or an emulator/simulator
 - A Supabase project with Auth, a `reports` table (schema above) and a Storage bucket for photos
 
 ### Installation
@@ -93,6 +94,14 @@ _[Add screenshots here: Home, Browse, Report form, Item Detail, My Reports]_
 - Email confirmation uses the configured Supabase Site URL. On web, the confirmation link returns to the app and signs the user in. A native deep-link return requires a standalone Expo build.
 - Contact info is hidden from anonymous users by database column permissions, not only by the interface. A read-only anonymous request for `contact_info` returns HTTP 401. Signed-in users can view contact details on report details, so enter only details you are willing to share with them.
 - In-app messaging between users is out of scope for this version.
+
+## Documentation
+
+- `docs/ADMIN_RUNBOOK.md` — daily admin checks and moderation procedure.
+- `docs/PUBLIC_LAUNCH_CHECKLIST.md` — remaining dashboard and business tasks before public launch.
+- `docs/SECURITY_DECISIONS.md` — security design decisions.
+- `docs/PRE_DEPLOY_SECURITY_CHECK.md` — raw security verification output.
+- `docs/FINAL_HANDOFF.md` — deployment and handoff status.
 
 ## Author
 

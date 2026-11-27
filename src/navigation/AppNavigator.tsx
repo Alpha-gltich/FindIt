@@ -15,6 +15,7 @@ import EditReportScreen from '../screens/EditReportScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import TermsScreen from '../screens/TermsScreen';
 import DeleteAccountScreen from '../screens/DeleteAccountScreen';
+import AdminModerationScreen from '../screens/AdminModerationScreen';
 import { RootStackParamList } from '../types/navigation';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { Colors, Fonts } from '../constants/colors';
@@ -92,6 +93,7 @@ function NavigatorContent() {
         <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} options={{ title: 'Privacy Policy' }} />
         <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms and Conditions' }} />
         <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: 'Delete Account' }} />
+        <Stack.Screen name="AdminModeration" component={AdminModerationScreen} options={{ title: 'Admin Moderation' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

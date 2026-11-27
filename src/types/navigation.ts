@@ -26,4 +26,5 @@ export type RootStackParamList = {
   Privacy: undefined;
   Terms: undefined;
   DeleteAccount: undefined;
+  AdminModeration: undefined;
 };
