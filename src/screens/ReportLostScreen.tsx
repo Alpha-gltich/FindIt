@@ -64,6 +64,15 @@ export default function ReportLostScreen() {
       showAlert('Missing info', 'Please fill in all fields, including a category.');
       return;
     }
+    if (
+      itemName.trim().length > 100 ||
+      description.trim().length > 1000 ||
+      location.trim().length > 100 ||
+      contactInfo.trim().length > 100
+    ) {
+      showAlert('Too much text', 'Item name: 100 characters. Description: 1000. Location and contact: 100.');
+      return;
+    }
     setCategoryError(false);
     setLoading(true);
 
@@ -131,6 +140,7 @@ export default function ReportLostScreen() {
           placeholder="e.g. Blue Backpack"
           value={itemName}
           onChangeText={setItemName}
+          maxLength={100}
           editable={!loading}
         />
         <Input
@@ -140,6 +150,7 @@ export default function ReportLostScreen() {
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
+          maxLength={1000}
           style={styles.textArea}
           helper="A few specific details help others recognise it."
           editable={!loading}
@@ -170,6 +181,7 @@ export default function ReportLostScreen() {
           placeholder="e.g. Library, 2nd floor"
           value={location}
           onChangeText={setLocation}
+          maxLength={100}
           editable={!loading}
         />
         <Input
@@ -177,6 +189,7 @@ export default function ReportLostScreen() {
           placeholder="Phone or email"
           value={contactInfo}
           onChangeText={setContactInfo}
+          maxLength={100}
           helper="Optional. Visible to logged-in users only."
           editable={!loading}
         />

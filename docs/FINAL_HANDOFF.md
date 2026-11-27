@@ -6,13 +6,15 @@
 - Vercel project: `cpital-hub/findit-campus`
 - Repository: `https://github.com/Alpha-gltich/FindIt.git`
 - Production branch: `main`
-- Current commit history contains the security, legal, deployment, and hardening changes.
+- Latest hardening commit: `c1b728c` — `feat: harden app for public launch`.
 
 ## Verified technical status
 
 - TypeScript check passes: `npx tsc --noEmit`.
 - Web export passes: `npx expo export -p web`.
+- GitHub Actions runs type-check and web export on pushes and pull requests.
 - Live production URL returns `HTTP/1.1 200 OK`.
+- Deployed bundle verification on 27 November 2026 found `Reveal contact`, `Admin Moderation`, `contact_reveal_audit`, and `compressPickedPhoto` in the live JavaScript.
 - Live security headers verified: CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and HSTS.
 - `https://findit-campus-ng.vercel.app` is the only active FindIt alias. Vercel can re-add default aliases on future deployments; remove them if a single public URL is required.
 - Supabase Auth Site URL and redirect URLs are configured for `https://findit-campus-ng.vercel.app/`.
@@ -31,8 +33,9 @@
   - `docs/PRE_DEPLOY_SECURITY_CHECK.md`
 - Admin procedures and the public-readiness verdict are in `docs/ADMIN_RUNBOOK.md`.
 - The exact dashboard-only launch checklist is in `docs/PUBLIC_LAUNCH_CHECKLIST.md`.
-- Repo-side hardening now includes photo compression, report/upload abuse-limit migrations, an admin moderation screen with report/photo deletion, and GitHub Actions checks.
+- Repo-side hardening now includes photo compression, report/upload abuse-limit migrations, user report flagging, flagged-report hiding from public Browse, an admin moderation screen with flag clearing and report/photo deletion, an in-app audit log, and GitHub Actions checks.
 - Admin moderation keeps contact numbers hidden until an admin explicitly reveals one; every reveal is written to `public.contact_reveal_audit`, and a failed log blocks the reveal.
+- Admins can clear flags after review; every clear is written to `public.report_flag_clear_audit`, and a failed log blocks the clear.
 - Readiness: controlled pilot is acceptable; uncontrolled launch with hundreds still requires Supabase Pro/custom SMTP/CAPTCHA, applying the new migrations, backups, and legal review first.
 
 ## Pending owner/operator actions

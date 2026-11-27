@@ -114,6 +114,20 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 ```
 
+## Deployed hardening bundle — raw verification
+
+### `GET /_expo/static/js/web/index-54d2b67ed82d8f1df64f417a0991a9c0.js`
+
+```text
+FOUND: Reveal contact
+FOUND: Admin Moderation
+FOUND: contact_reveal_audit
+FOUND: compressPickedPhoto
+CHARS: 1187629
+```
+
+`enforce_report_limits` is a database trigger and is not expected in the client bundle.
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`

@@ -27,4 +27,5 @@ export type RootStackParamList = {
   Terms: undefined;
   DeleteAccount: undefined;
   AdminModeration: undefined;
+  AdminAuditLog: undefined;
 };

@@ -10,7 +10,8 @@ A mobile lost-and-found app built for a university/campus community. Report item
 - **Item detail view**: full report details; contact info is shown in the app only to logged-in users
 - **My Reports**: view, edit, mark as recovered, or delete your own submitted reports
 - **Photo upload**: attach a compressed photo to any report, stored via Supabase Storage
-- **Admin moderation**: staff-only screen to review, audit-logged contact reveal, and delete reports plus photos
+- **Report flagging**: signed-in users can flag a report once; flagged reports are hidden from public Browse
+- **Admin moderation**: staff-only screen to review flags, clear flags, audit-logged contact reveal, and delete reports plus photos
 - **Error handling**: validation on all forms, retry-able error states on network failures
 
 ## Tech Stack

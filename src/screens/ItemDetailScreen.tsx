@@ -21,9 +21,12 @@ export default function ItemDetailScreen() {
   const [status, setStatus] = useState(report.status);
   const [isOwner, setIsOwner] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [contactInfo, setContactInfo] = useState<string | null>(null);
   const [contactLoaded, setContactLoaded] = useState(false);
   const [contactError, setContactError] = useState(false);
+  const [hasFlagged, setHasFlagged] = useState(false);
+  const [flagging, setFlagging] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -33,6 +36,7 @@ export default function ItemDetailScreen() {
       if (!user) return;
 
       setIsLoggedIn(true);
+      setUserId(user.id);
       if (user.id === report.user_id) setIsOwner(true);
 
       const { data, error } = await supabase
@@ -48,6 +52,17 @@ export default function ItemDetailScreen() {
         setContactError(false);
       }
       setContactLoaded(true);
+
+      const { data: flagData, error: flagError } = await supabase
+        .from('report_flags')
+        .select('id')
+        .eq('report_id', report.id)
+        .eq('reporter_id', user.id)
+        .limit(1);
+
+      if (!flagError) {
+        setHasFlagged(Boolean(flagData && flagData.length > 0));
+      }
     };
     loadUserAndContact();
   }, [report.id, report.user_id]);
@@ -108,6 +123,39 @@ export default function ItemDetailScreen() {
     );
   };
 
+  const handleFlag = () => {
+    if (!userId) {
+      showAlert('Log in required', 'Please log in to flag a report.');
+      return;
+    }
+    if (hasFlagged) {
+      return;
+    }
+
+    showConfirm(
+      'Flag this report?',
+      'It will disappear from public Browse and staff will review it. You can flag each report only once.',
+      async () => {
+        setFlagging(true);
+        const { error } = await supabase.from('report_flags').insert({
+          report_id: report.id,
+          reporter_id: userId,
+          reason: 'inappropriate',
+        });
+        setFlagging(false);
+
+        if (error) {
+          showAlert('Flag failed', error.message);
+          return;
+        }
+
+        setHasFlagged(true);
+        showAlert('Report flagged', 'Thank you. Staff will review this report.');
+      },
+      { confirmLabel: 'Flag' }
+    );
+  };
+
   const handleOpenWhatsApp = () => {
     const url = WHATSAPP_GROUP_URL.trim();
 
@@ -146,77 +194,86 @@ export default function ItemDetailScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FadeIn>
         <View style={styles.photoCard}>
-        {report.photo_url ? (
-          <Image source={{ uri: report.photo_url }} style={styles.photo} />
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoPlaceholderText}>No Photo</Text>
+          {report.photo_url ? (
+            <Image source={{ uri: report.photo_url }} style={styles.photo} />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoPlaceholderText}>No Photo</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.titleRow}>
+          <Text style={styles.itemName}>{report.item_name}</Text>
+          <View style={[styles.typeTag, isLost ? styles.lostTag : styles.foundTag]}>
+            <Text style={[styles.typeTagText, isLost ? styles.lostText : styles.foundText]}>
+              {isLost ? 'Lost' : 'Found'}
+            </Text>
           </View>
-        )}
-      </View>
-
-      <View style={styles.titleRow}>
-        <Text style={styles.itemName}>{report.item_name}</Text>
-        <View style={[styles.typeTag, isLost ? styles.lostTag : styles.foundTag]}>
-          <Text style={[styles.typeTagText, isLost ? styles.lostText : styles.foundText]}>
-            {isLost ? 'Lost' : 'Found'}
-          </Text>
-        </View>
-      </View>
-
-      {status === 'recovered' ? (
-        <View style={styles.recoveredBanner}>
-          <Text style={styles.recoveredBannerText}>✓ This item has been marked as recovered</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.detailsCard}>
-        <View style={styles.section}>
-          <Text style={styles.label}>Description</Text>
-          <Text style={styles.value}>{report.description}</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Category</Text>
-          <Text style={styles.value}>{report.category}</Text>
+        {status === 'recovered' ? (
+          <View style={styles.recoveredBanner}>
+            <Text style={styles.recoveredBannerText}>✓ This item has been marked as recovered</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.detailsCard}>
+          <View style={styles.section}>
+            <Text style={styles.label}>Description</Text>
+            <Text style={styles.value}>{report.description}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Category</Text>
+            <Text style={styles.value}>{report.category}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Location</Text>
+            <Text style={styles.value}>📍 {report.location}</Text>
+          </View>
+
+          <View style={styles.sectionLast}>
+            <Text style={styles.label}>Contact</Text>
+            {renderContactSection()}
+          </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.label}>Location</Text>
-          <Text style={styles.value}>📍 {report.location}</Text>
-        </View>
-
-        <View style={styles.sectionLast}>
-          <Text style={styles.label}>Contact</Text>
-          {renderContactSection()}
-        </View>
-      </View>
-
-      <View style={styles.communityAction}>
-        <Button
-          title={WHATSAPP_GROUP_URL ? 'Open WhatsApp Group' : 'WhatsApp Group (coming soon)'}
-          onPress={handleOpenWhatsApp}
-          variant="secondary"
-        />
-      </View>
-
-      {isOwner ? (
-        <View style={styles.ownerActions}>
+        <View style={styles.communityActions}>
           <Button
-            title={status === 'active' ? 'Mark as Recovered' : 'Mark as Active'}
-            onPress={handleToggleStatus}
-            variant={status === 'active' ? 'secondary' : 'outline'}
-            loading={updating}
+            title={WHATSAPP_GROUP_URL ? 'Open WhatsApp Group' : 'WhatsApp Group (coming soon)'}
+            onPress={handleOpenWhatsApp}
+            variant="secondary"
           />
-          <Button title="Edit Report" onPress={handleEdit} variant="outline" />
-          <Button
-            title="Delete Report"
-            onPress={handleDelete}
-            variant="danger"
-            loading={deleting}
-          />
+          {isLoggedIn && !isOwner ? (
+            <Button
+              title={hasFlagged ? 'Already flagged' : 'Flag this report'}
+              onPress={handleFlag}
+              variant="outline"
+              loading={flagging}
+              disabled={hasFlagged}
+            />
+          ) : null}
         </View>
-      ) : null}
+
+        {isOwner ? (
+          <View style={styles.ownerActions}>
+            <Button
+              title={status === 'active' ? 'Mark as Recovered' : 'Mark as Active'}
+              onPress={handleToggleStatus}
+              variant={status === 'active' ? 'secondary' : 'outline'}
+              loading={updating}
+            />
+            <Button title="Edit Report" onPress={handleEdit} variant="outline" />
+            <Button
+              title="Delete Report"
+              onPress={handleDelete}
+              variant="danger"
+              loading={deleting}
+            />
+          </View>
+        ) : null}
       </FadeIn>
     </ScrollView>
   );
@@ -334,7 +391,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 22,
   },
-  communityAction: {
+  communityActions: {
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
   ownerActions: {

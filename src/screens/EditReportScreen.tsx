@@ -76,6 +76,15 @@ export default function EditReportScreen() {
       showAlert('Missing info', 'Please fill in all fields, including a category.');
       return;
     }
+    if (
+      itemName.trim().length > 100 ||
+      description.trim().length > 1000 ||
+      location.trim().length > 100 ||
+      contactInfo.trim().length > 100
+    ) {
+      showAlert('Too much text', 'Item name: 100 characters. Description: 1000. Location and contact: 100.');
+      return;
+    }
     setCategoryError(false);
     setLoading(true);
 
@@ -138,6 +147,7 @@ export default function EditReportScreen() {
           placeholder="Item name"
           value={itemName}
           onChangeText={setItemName}
+          maxLength={100}
           editable={!loading}
         />
         <Input
@@ -147,6 +157,7 @@ export default function EditReportScreen() {
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
+          maxLength={1000}
           style={styles.textArea}
           editable={!loading}
         />
@@ -176,6 +187,7 @@ export default function EditReportScreen() {
           placeholder="Location"
           value={location}
           onChangeText={setLocation}
+          maxLength={100}
           editable={!loading}
         />
         <Input
@@ -183,6 +195,7 @@ export default function EditReportScreen() {
           placeholder="Phone or email"
           value={contactInfo}
           onChangeText={setContactInfo}
+          maxLength={100}
           helper="Optional. Visible to logged-in users only."
           editable={!loading}
         />

@@ -70,6 +70,8 @@ Run these in the Supabase SQL Editor in this exact order:
 3. `supabase/migrations/20261127_abuse_limits.sql`
 4. `supabase/migrations/20261127_admin_storage_delete.sql`
 5. `supabase/migrations/20261127_contact_reveal_audit.sql`
+6. `supabase/migrations/20261127_report_flags.sql`
+7. `supabase/migrations/20261127_hide_flagged_reports.sql`
 
 Then run **Database → Security Advisor** and fix any new warnings.
 
@@ -96,7 +98,7 @@ Delete the auth user through **Authentication → Users** in the Supabase dashbo
 
 ### Recent reports for moderation
 
-Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, keeps contact numbers hidden until an admin taps **Reveal contact** on that report, logs each reveal, opens report details, and deletes a report plus its attached photo. A reveal is only shown after the audit-log write succeeds.
+Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, flag counts, contact numbers hidden until an admin taps **Reveal contact**, report details, **Clear flags**, and deletion of a report plus its attached photo. A reveal is only shown after the audit-log write succeeds. A flag clear is only applied after its audit row is written. Flagged reports are hidden from public Browse but remain visible to owners and admins.
 
 You can also review reports in SQL:
 
@@ -107,7 +109,26 @@ order by created_at desc
 limit 50;
 ```
 
-### Contact reveal audit
+### Flagged reports
+
+```sql
+select rf.created_at, rf.reason, r.item_name, r.location
+from public.report_flags rf
+join public.reports r on r.id = rf.report_id
+order by rf.created_at desc
+limit 50;
+```
+
+Flagged reports are hidden from Browse for non-owners and non-admins by the restrictive RLS policy in `20261127_hide_flagged_reports.sql`. To restore a report to Browse, use **Clear flags** in Admin Moderation, or delete the rows as an admin in SQL. Clear only after reviewing the report.
+
+### Admin audit log
+
+Use **Admin Moderation → Audit log** in the app. It has two tabs:
+
+- **Contact reveals** — who revealed a contact number and when.
+- **Flag clears** — who cleared flags, which report, and how many flags were cleared.
+
+You can also review both tables in SQL:
 
 ```sql
 select cra.created_at, u.email, cra.report_id
@@ -115,9 +136,15 @@ from public.contact_reveal_audit cra
 left join auth.users u on u.id = cra.admin_user_id
 order by cra.created_at desc
 limit 50;
+
+select fca.created_at, u.email, fca.report_id, fca.cleared_count
+from public.report_flag_clear_audit fca
+left join auth.users u on u.id = fca.admin_user_id
+order by fca.created_at desc
+limit 50;
 ```
 
-The app writes one row each time an admin reveals a contact number. If the write fails, the number is not revealed.
+The app writes these rows before allowing the action. If the write fails, the reveal or flag clear is blocked.
 
 ### Recent storage objects
 

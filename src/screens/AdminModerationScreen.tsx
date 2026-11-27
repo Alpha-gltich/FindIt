@@ -50,9 +50,11 @@ function formatDate(value: string): string {
 export default function AdminModerationScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [reports, setReports] = useState<Report[]>([]);
+  const [flagCounts, setFlagCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingFlagsId, setClearingFlagsId] = useState<string | null>(null);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [revealedContacts, setRevealedContacts] = useState<Record<string, boolean>>({});
   const [denied, setDenied] = useState(false);
@@ -94,6 +96,21 @@ export default function AdminModerationScreen() {
 
     setFetchError(false);
     setReports((data ?? []) as unknown as Report[]);
+
+    const { data: flagData, error: flagError } = await supabase
+      .from('report_flags')
+      .select('report_id')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!flagError) {
+      const counts: Record<string, number> = {};
+      for (const row of flagData ?? []) {
+        const reportId = row.report_id as string;
+        counts[reportId] = (counts[reportId] ?? 0) + 1;
+      }
+      setFlagCounts(counts);
+    }
   }, []);
 
   useEffect(() => {
@@ -129,6 +146,11 @@ export default function AdminModerationScreen() {
     }
 
     setReports((current) => current.filter((item) => item.id !== report.id));
+    setFlagCounts((current) => {
+      const next = { ...current };
+      delete next[report.id];
+      return next;
+    });
     setDeletingId(null);
     showAlert('Report deleted', 'The report and its attached photo were removed.');
   };
@@ -141,6 +163,61 @@ export default function AdminModerationScreen() {
         void deleteReport(report);
       },
       { confirmLabel: 'Delete', destructive: true }
+    );
+  };
+
+  const clearFlags = async (report: Report) => {
+    const flagCount = flagCounts[report.id] ?? 0;
+
+    if (!adminUserId) {
+      showAlert('Access error', 'Please reopen the moderation screen and try again.');
+      return;
+    }
+
+    setClearingFlagsId(report.id);
+
+    const { error: auditError } = await supabase.from('report_flag_clear_audit').insert({
+      admin_user_id: adminUserId,
+      report_id: report.id,
+      cleared_count: flagCount,
+    });
+
+    if (auditError) {
+      showAlert('Could not log flag clear', auditError.message);
+      setClearingFlagsId(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('report_flags')
+      .delete()
+      .eq('report_id', report.id);
+
+    if (error) {
+      showAlert('Could not clear flags', error.message);
+      setClearingFlagsId(null);
+      return;
+    }
+
+    setFlagCounts((current) => {
+      const next = { ...current };
+      delete next[report.id];
+      return next;
+    });
+    setClearingFlagsId(null);
+    showAlert('Flags cleared', 'This report is visible in Browse again.');
+  };
+
+  const handleClearFlags = (report: Report) => {
+    const flagCount = flagCounts[report.id] ?? 0;
+
+    showConfirm(
+      'Clear flags on this report?',
+      `This removes ${flagCount} ${flagCount === 1 ? 'flag' : 'flags'} and makes the report visible in Browse again. The action is logged.`,
+      () => {
+        void clearFlags(report);
+      },
+      { confirmLabel: 'Clear flags' }
     );
   };
 
@@ -218,6 +295,7 @@ export default function AdminModerationScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const contactVisible = Boolean(revealedContacts[item.id] && item.contact_info);
+          const flagCount = flagCounts[item.id] ?? 0;
 
           return (
             <View style={styles.card}>
@@ -240,6 +318,14 @@ export default function AdminModerationScreen() {
               <Text style={styles.metaText}>
                 {item.category} • {item.location}
               </Text>
+
+              {flagCount > 0 ? (
+                <View style={styles.flagBadge}>
+                  <Text style={styles.flagText}>
+                    ⚑ {flagCount} {flagCount === 1 ? 'flag' : 'flags'}
+                  </Text>
+                </View>
+              ) : null}
 
               {item.photo_url ? (
                 <Image source={{ uri: item.photo_url }} style={styles.thumbnail} />
@@ -269,6 +355,15 @@ export default function AdminModerationScreen() {
                     }}
                   />
                 ) : null}
+                {flagCount > 0 ? (
+                  <Button
+                    title={clearingFlagsId === item.id ? 'Clearing...' : 'Clear flags'}
+                    variant="outline"
+                    style={styles.actionButton}
+                    loading={clearingFlagsId === item.id}
+                    onPress={() => handleClearFlags(item)}
+                  />
+                ) : null}
                 <Button
                   title={deletingId === item.id ? 'Deleting...' : 'Delete'}
                   variant="danger"
@@ -289,9 +384,18 @@ export default function AdminModerationScreen() {
   return (
     <AppShell title="Moderation">
       <View style={styles.container}>
-        <Text style={styles.privacyNote}>
-          Contact numbers stay hidden until an admin reveals them. Each reveal is logged.
-        </Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.privacyNote}>
+            Contact numbers stay hidden until an admin reveals them. Reveals and flag clears are logged.
+          </Text>
+          <View style={styles.auditWrapper}>
+            <Button
+              title="Audit log"
+              variant="outline"
+              onPress={() => navigation.navigate('AdminAuditLog')}
+            />
+          </View>
+        </View>
         {renderContent()}
       </View>
     </AppShell>
@@ -303,13 +407,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  privacyNote: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
+    gap: Spacing.md,
+  },
+  privacyNote: {
+    flex: 1,
     fontSize: 12,
     fontFamily: Fonts.medium,
     color: Colors.textSecondary,
-    textAlign: 'center',
+  },
+  auditWrapper: {
+    width: 130,
   },
   listContent: {
     width: '100%',
@@ -374,6 +486,19 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     color: Colors.primary,
     marginBottom: Spacing.sm,
+  },
+  flagBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.dangerSoft,
+    borderRadius: Radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: Spacing.sm,
+  },
+  flagText: {
+    fontSize: 11,
+    fontFamily: Fonts.bold,
+    color: Colors.danger,
   },
   thumbnail: {
     width: '100%',
