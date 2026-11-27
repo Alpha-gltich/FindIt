@@ -128,6 +128,20 @@ CHARS: 1187629
 
 `enforce_report_limits` is a database trigger and is not expected in the client bundle.
 
+### `GET /_expo/static/js/web/index-55139365c1602d2d4691010e8a9df103.js`
+
+```text
+FOUND: Clear flags
+FOUND: report_flag_clear_audit
+FOUND: Contact reveals
+FOUND: Flag clears
+FOUND: Too much text
+FOUND: compressPickedPhoto
+CHARS: 1196104
+```
+
+The live bundle contains the moderation flag-clear controls, both audit tabs, and the form length guard.
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`
