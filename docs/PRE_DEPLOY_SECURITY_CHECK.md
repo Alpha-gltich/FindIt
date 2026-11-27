@@ -87,6 +87,17 @@ Request body: `{}`
 HTTP 401
 ```
 
+## Auth settings — raw response
+
+### `GET /auth/v1/settings`
+
+```text
+HTTP 200
+{"external":{"anonymous_users":false,"apple":false,"azure":false,"bitbucket":false,"discord":false,"facebook":false,"snapchat":false,"figma":false,"fly":false,"github":false,"gitlab":false,"google":false,"keycloak":false,"kakao":false,"linkedin":false,"linkedin_oidc":false,"notion":false,"spotify":false,"slack":false,"slack_oidc":false,"workos":false,"twitch":false,"twitter":false,"email":true,"phone":false,"zoom":false},"disable_signup":false,"mailer_autoconfirm":false,"phone_autoconfirm":false,"sms_provider":"twilio","saml_enabled":false,"saml_private_key_next_configured":true,"passkeys_enabled":false}
+```
+
+`mailer_autoconfirm: false` means email confirmation is required. `disable_signup: false` and `email: true` mean email signup is enabled.
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`

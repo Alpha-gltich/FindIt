@@ -14,6 +14,8 @@
 - Web export passes: `npx expo export -p web`.
 - Live production URL returns `HTTP/1.1 200 OK`.
 - Supabase Auth Site URL and redirect URLs are configured for `https://findit-campus-ng.vercel.app/`.
+- Live Supabase Auth settings confirm: email provider enabled, signup enabled, and `mailer_autoconfirm: false`, so a new email must be confirmed before it is active.
+- On web, `detectSessionInUrl: true` lets the confirmation link exchange its token and sign the user in; the redirect destination does not decide which email is confirmed. Supabase ties the confirmation token to the newly registered email.
 - Anonymous access tests show:
   - public report fields are readable;
   - `contact_info` is denied to anonymous clients;
@@ -103,6 +105,7 @@ These require a paid plan, external account, or buyer-provided information:
 - Real WhatsApp group link; currently a placeholder in `src/constants/legal.ts`.
 - Automated deletion execution; currently an admin-reviewed request workflow.
 - Git-based auto-deploy; connect the Vercel project to GitHub when ready.
+- Native deep-link return after email confirmation requires a standalone Expo build; currently the browser confirmation completes server-side, then the user reopens the app to log in.
 - Native production builds and store submission are out of scope for this handoff.
 
 ## Support boundaries

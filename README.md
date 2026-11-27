@@ -90,7 +90,7 @@ _[Add screenshots here: Home, Browse, Report form, Item Detail, My Reports]_
 
 ## Known Limitations
 
-- Email confirmation links redirect to a default Supabase localhost page (cosmetic only; confirmation still succeeds server-side). A custom deep-link redirect requires a standalone Expo build.
+- Email confirmation uses the configured Supabase Site URL. On web, the confirmation link returns to the app and signs the user in. A native deep-link return requires a standalone Expo build.
 - Contact info is hidden from anonymous users by database column permissions, not only by the interface. A read-only anonymous request for `contact_info` returns HTTP 401. Signed-in users can view contact details on report details, so enter only details you are willing to share with them.
 - In-app messaging between users is out of scope for this version.
 
