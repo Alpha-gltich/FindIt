@@ -63,6 +63,7 @@ on conflict (user_id) do nothing;
    - Confirm `public.expire_old_audit_logs()` is not executable by `anon` or `authenticated`.
    - If pg_cron is available, confirm the `findit-expire-old-audit-logs` job exists.
    - Confirm pending deletion requests are not removed by the 180-day cleanup.
+   - Confirm an admin can mark a test deletion request complete in the app.
 
 ## You must do these outside the code
 
@@ -78,7 +79,7 @@ on conflict (user_id) do nothing;
 - Limits each user to 100 total reports and 20 reports per hour at the database level.
 - Limits each user to 300 total photos and 20 photos per hour at the storage policy level.
 - Lets signed-in users flag a report once; flagged reports disappear from public Browse but stay visible to owners and admins.
-- Gives admins a moderation screen to view flagged reports, open them, clear flags, and delete reports plus attached photos.
+- Gives admins a moderation screen to view flagged reports, open them, clear flags, delete reports plus attached photos, and review account deletion requests.
 - Keeps contact numbers hidden in the moderation list until an admin explicitly reveals one, and logs every reveal.
 - Logs every flag clear with the admin, report, and number of flags cleared.
 - Expires audit rows and resolved deletion requests after 180 days; pending deletion requests are retained.

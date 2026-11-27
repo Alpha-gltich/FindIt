@@ -99,9 +99,11 @@ Delete the auth user through **Authentication → Users** in the Supabase dashbo
 
 Pending requests are never expired. Completed and cancelled requests are removed after 180 days by the retention cleanup.
 
+Use **Admin Moderation → Deletion requests** to review pending requests in the app. Mark a request **Complete** only after reviewing and removing the user's data, then delete the auth user through **Authentication → Users** in the Supabase dashboard. The app cannot delete auth users because it has no `service_role` key. **Cancel request** is available when a request should not be completed.
+
 ### Recent reports for moderation
 
-Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, flag counts, contact numbers hidden until an admin taps **Reveal contact**, report details, **Clear flags**, and deletion of a report plus its attached photo. A reveal is only shown after the audit-log write succeeds. A flag clear is only applied after its audit row is written. Flagged reports are hidden from public Browse but remain visible to owners and admins.
+Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, flag counts, contact numbers hidden until an admin taps **Reveal contact**, report details, **Clear flags**, and deletion of a report plus its attached photo. It also links to **Audit log** and **Deletion requests**. A reveal is only shown after the audit-log write succeeds. A flag clear is only applied after its audit row is written. Flagged reports are hidden from public Browse but remain visible to owners and admins.
 
 You can also review reports in SQL:
 

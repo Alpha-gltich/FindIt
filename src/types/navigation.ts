@@ -28,4 +28,5 @@ export type RootStackParamList = {
   DeleteAccount: undefined;
   AdminModeration: undefined;
   AdminAuditLog: undefined;
+  AdminDeletionRequests: undefined;
 };

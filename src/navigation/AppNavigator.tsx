@@ -17,6 +17,7 @@ import TermsScreen from '../screens/TermsScreen';
 import DeleteAccountScreen from '../screens/DeleteAccountScreen';
 import AdminModerationScreen from '../screens/AdminModerationScreen';
 import AdminAuditLogScreen from '../screens/AdminAuditLogScreen';
+import AdminDeletionRequestsScreen from '../screens/AdminDeletionRequestsScreen';
 import { RootStackParamList } from '../types/navigation';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { Colors, Fonts } from '../constants/colors';
@@ -96,6 +97,7 @@ function NavigatorContent() {
         <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: 'Delete Account' }} />
         <Stack.Screen name="AdminModeration" component={AdminModerationScreen} options={{ title: 'Admin Moderation' }} />
         <Stack.Screen name="AdminAuditLog" component={AdminAuditLogScreen} options={{ title: 'Admin Audit Log' }} />
+        <Stack.Screen name="AdminDeletionRequests" component={AdminDeletionRequestsScreen} options={{ title: 'Deletion Requests' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

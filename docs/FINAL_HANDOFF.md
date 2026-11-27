@@ -34,7 +34,7 @@
   - `docs/PRE_DEPLOY_SECURITY_CHECK.md`
 - Admin procedures and the public-readiness verdict are in `docs/ADMIN_RUNBOOK.md`.
 - The exact dashboard-only launch checklist is in `docs/PUBLIC_LAUNCH_CHECKLIST.md`.
-- Repo-side hardening now includes photo compression, report/upload abuse-limit migrations, user report flagging, flagged-report hiding from public Browse, an admin moderation screen with flag clearing and report/photo deletion, an in-app audit log, and GitHub Actions checks.
+- Repo-side hardening now includes photo compression, report/upload abuse-limit migrations, user report flagging, flagged-report hiding from public Browse, an admin moderation screen with flag clearing, report/photo deletion, deletion-request review, an in-app audit log, and GitHub Actions checks.
 - Admin moderation keeps contact numbers hidden until an admin explicitly reveals one; every reveal is written to `public.contact_reveal_audit`, and a failed log blocks the reveal.
 - Admins can clear flags after review; every clear is written to `public.report_flag_clear_audit`, and a failed log blocks the clear.
 - Audit rows and resolved deletion requests expire after 180 days through `20261127_audit_retention.sql`; pending deletion requests are retained, and the cleanup function is not callable by app clients.

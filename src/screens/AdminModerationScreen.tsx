@@ -388,11 +388,16 @@ export default function AdminModerationScreen() {
           <Text style={styles.privacyNote}>
             Contact numbers stay hidden until an admin reveals them. Reveals and flag clears are logged.
           </Text>
-          <View style={styles.auditWrapper}>
+          <View style={styles.adminTools}>
             <Button
               title="Audit log"
               variant="outline"
               onPress={() => navigation.navigate('AdminAuditLog')}
+            />
+            <Button
+              title="Deletion requests"
+              variant="outline"
+              onPress={() => navigation.navigate('AdminDeletionRequests')}
             />
           </View>
         </View>
@@ -420,8 +425,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     color: Colors.textSecondary,
   },
-  auditWrapper: {
-    width: 130,
+  adminTools: {
+    width: 170,
+    gap: Spacing.sm,
   },
   listContent: {
     width: '100%',
