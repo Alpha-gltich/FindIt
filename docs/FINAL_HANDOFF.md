@@ -16,6 +16,7 @@
 - Supabase Auth Site URL and redirect URLs are configured for `https://findit-campus-ng.vercel.app/`.
 - Live Supabase Auth settings confirm: email provider enabled, signup enabled, and `mailer_autoconfirm: false`, so a new email must be confirmed before it is active.
 - On web, `detectSessionInUrl: true` lets the confirmation link exchange its token and sign the user in; the redirect destination does not decide which email is confirmed. Supabase ties the confirmation token to the newly registered email.
+- Real-email test completed on 27 November 2026: registration showed the "Check your email" message, the confirmation link landed the user logged in, and a subsequent logout/login succeeded.
 - Anonymous access tests show:
   - public report fields are readable;
   - `contact_info` is denied to anonymous clients;

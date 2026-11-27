@@ -98,6 +98,8 @@ HTTP 200
 
 `mailer_autoconfirm: false` means email confirmation is required. `disable_signup: false` and `email: true` mean email signup is enabled.
 
+A real-email test was completed on 27 November 2026: registration showed the "Check your email" message, the confirmation link landed the user logged in, and a subsequent logout/login succeeded.
+
 ## Credential and secret search
 
 Search terms: `key`, `secret`, `token`, `password`, `service_role`
