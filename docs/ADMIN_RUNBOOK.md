@@ -97,6 +97,8 @@ where user_id = 'USER_ID_HERE' and status = 'pending';
 
 Delete the auth user through **Authentication → Users** in the Supabase dashboard. Do not add a `service_role` key to the app.
 
+Pending requests are never expired. Completed and cancelled requests are removed after 180 days by the retention cleanup.
+
 ### Recent reports for moderation
 
 Use **Home → Admin Moderation** in the app. It shows the 50 newest reports, flag counts, contact numbers hidden until an admin taps **Reveal contact**, report details, **Clear flags**, and deletion of a report plus its attached photo. A reveal is only shown after the audit-log write succeeds. A flag clear is only applied after its audit row is written. Flagged reports are hidden from public Browse but remain visible to owners and admins.
@@ -149,7 +151,7 @@ The app writes these rows before allowing the action. If the write fails, the re
 
 ### Audit retention
 
-Audit rows expire after **180 days**.
+Audit rows and resolved deletion requests expire after **180 days**. Pending deletion requests are kept until an admin handles them.
 
 If pg_cron is enabled, the migration schedules a daily cleanup at **03:17 UTC** named `findit-expire-old-audit-logs`. Check it with:
 

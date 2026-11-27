@@ -62,6 +62,7 @@ on conflict (user_id) do nothing;
    - Confirm a non-admin cannot delete `public.report_flags` or read either audit table.
    - Confirm `public.expire_old_audit_logs()` is not executable by `anon` or `authenticated`.
    - If pg_cron is available, confirm the `findit-expire-old-audit-logs` job exists.
+   - Confirm pending deletion requests are not removed by the 180-day cleanup.
 
 ## You must do these outside the code
 
@@ -80,7 +81,7 @@ on conflict (user_id) do nothing;
 - Gives admins a moderation screen to view flagged reports, open them, clear flags, and delete reports plus attached photos.
 - Keeps contact numbers hidden in the moderation list until an admin explicitly reveals one, and logs every reveal.
 - Logs every flag clear with the admin, report, and number of flags cleared.
-- Expires audit rows after 180 days.
+- Expires audit rows and resolved deletion requests after 180 days; pending deletion requests are retained.
 - Runs type-check and web export in GitHub Actions on every push and pull request.
 
 ## Remaining caveats

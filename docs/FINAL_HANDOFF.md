@@ -37,7 +37,7 @@
 - Repo-side hardening now includes photo compression, report/upload abuse-limit migrations, user report flagging, flagged-report hiding from public Browse, an admin moderation screen with flag clearing and report/photo deletion, an in-app audit log, and GitHub Actions checks.
 - Admin moderation keeps contact numbers hidden until an admin explicitly reveals one; every reveal is written to `public.contact_reveal_audit`, and a failed log blocks the reveal.
 - Admins can clear flags after review; every clear is written to `public.report_flag_clear_audit`, and a failed log blocks the clear.
-- Audit rows expire after 180 days through `20261127_audit_retention.sql`; the cleanup function is not callable by app clients.
+- Audit rows and resolved deletion requests expire after 180 days through `20261127_audit_retention.sql`; pending deletion requests are retained, and the cleanup function is not callable by app clients.
 - Readiness: controlled pilot is acceptable; uncontrolled launch with hundreds still requires Supabase Pro/custom SMTP/CAPTCHA, applying the new migrations, backups, and legal review first.
 
 ## Pending owner/operator actions

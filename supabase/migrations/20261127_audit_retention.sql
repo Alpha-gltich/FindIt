@@ -1,5 +1,6 @@
--- FindIt migration: expire admin audit rows after 180 days.
--- Applies to contact_reveal_audit and report_flag_clear_audit.
+-- FindIt migration: expire old admin records after 180 days.
+-- Applies to contact_reveal_audit, report_flag_clear_audit, and resolved account_deletion_requests.
+-- Pending deletion requests are never expired; they stay until an admin handles them.
 -- The cleanup function is callable only by postgres/pg_cron, never by anon or authenticated clients.
 
 create or replace function public.expire_old_audit_logs()
@@ -20,10 +21,17 @@ begin
     delete from public.report_flag_clear_audit
     where created_at < now() - interval '180 days'
     returning 1
+  ),
+  removed_requests as (
+    delete from public.account_deletion_requests
+    where status <> 'pending'
+      and coalesce(processed_at, created_at) < now() - interval '180 days'
+    returning 1
   )
   select
     (select count(*) from removed_reveals) +
-    (select count(*) from removed_clears)
+    (select count(*) from removed_clears) +
+    (select count(*) from removed_requests)
   into deleted_count;
 
   return deleted_count;
@@ -31,7 +39,7 @@ end;
 $$;
 
 comment on function public.expire_old_audit_logs() is
-  'Deletes FindIt admin audit rows older than 180 days. Intended for pg_cron/postgres only.';
+  'Deletes FindIt admin audit rows and resolved deletion requests older than 180 days. Pending requests are retained. Intended for pg_cron/postgres only.';
 
 revoke all on function public.expire_old_audit_logs() from public, anon, authenticated;
 grant execute on function public.expire_old_audit_logs() to postgres;
@@ -88,3 +96,8 @@ where created_at < now() - interval '180 days';
 select count(*) as old_flag_clears
 from public.report_flag_clear_audit
 where created_at < now() - interval '180 days';
+
+select count(*) as old_resolved_requests
+from public.account_deletion_requests
+where status <> 'pending'
+  and coalesce(processed_at, created_at) < now() - interval '180 days';
