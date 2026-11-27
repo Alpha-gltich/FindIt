@@ -155,12 +155,25 @@ The app writes these rows before allowing the action. If the write fails, the re
 
 Audit rows and resolved deletion requests expire after **180 days**. Pending deletion requests are kept until an admin handles them.
 
-If pg_cron is enabled, the migration schedules a daily cleanup at **03:17 UTC** named `findit-expire-old-audit-logs`. Check it with:
+If pg_cron is enabled, the migration schedules a daily cleanup at **03:17 UTC** named `findit-expire-old-audit-logs`. Check it safely with this query, which will not fail when pg_cron is unavailable:
 
 ```sql
-select jobid, jobname, schedule, command
-from cron.job
-where jobname = 'findit-expire-old-audit-logs';
+do $$
+declare
+  j record;
+begin
+  if to_regclass('cron.job') is not null then
+    for j in
+      select jobid, jobname, schedule, command
+      from cron.job
+      where jobname = 'findit-expire-old-audit-logs'
+    loop
+      raise notice 'pg_cron job: % | % | % | %', j.jobid, j.jobname, j.schedule, j.command;
+    end loop;
+  else
+    raise notice 'pg_cron job table unavailable; run public.expire_old_audit_logs() manually.';
+  end if;
+end $$;
 ```
 
 If pg_cron is unavailable, run cleanup manually when needed:

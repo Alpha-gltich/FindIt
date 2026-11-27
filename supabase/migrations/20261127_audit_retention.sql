@@ -56,7 +56,8 @@ begin
     raise notice 'pg_cron could not be enabled: %. Use manual cleanup.', sqlerrm;
   end;
 
-  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+  if exists (select 1 from pg_extension where extname = 'pg_cron')
+     and to_regclass('cron.job') is not null then
     begin
       perform cron.unschedule('findit-expire-old-audit-logs');
     exception when others then
@@ -73,7 +74,7 @@ begin
       raise notice 'Could not schedule pg_cron cleanup: %. Use manual cleanup.', sqlerrm;
     end;
   else
-    raise notice 'pg_cron unavailable; run public.expire_old_audit_logs() manually.';
+    raise notice 'pg_cron scheduling unavailable; run public.expire_old_audit_logs() manually.';
   end if;
 end $$;
 
@@ -83,10 +84,23 @@ select p.proname, p.prosecdef, p.proacl
 from pg_proc p
 where p.oid = 'public.expire_old_audit_logs()'::regprocedure;
 
--- Expected: scheduled once daily at 03:17 UTC if pg_cron is available.
-select jobid, jobname, schedule, command
-from cron.job
-where jobname = 'findit-expire-old-audit-logs';
+-- Safe job check: prints the schedule when pg_cron is present; otherwise prints a notice.
+do $$
+declare
+  j record;
+begin
+  if to_regclass('cron.job') is not null then
+    for j in
+      select jobid, jobname, schedule, command
+      from cron.job
+      where jobname = 'findit-expire-old-audit-logs'
+    loop
+      raise notice 'pg_cron job: % | % | % | %', j.jobid, j.jobname, j.schedule, j.command;
+    end loop;
+  else
+    raise notice 'pg_cron job table unavailable; run public.expire_old_audit_logs() manually.';
+  end if;
+end $$;
 
 -- Expected: 0 after running `select public.expire_old_audit_logs();`.
 select count(*) as old_reveals
